@@ -37,21 +37,21 @@ public class MasterDetailWritingTest {
 		new OM<Person>(Person.class)
 			.writeEntity(person, destination );
 		
-		assertEquals(getInsertsRegistry(Person.class).size(), 1); // 1 new person
-		assertEquals(getInsertsRegistry(Address.class).size(), 3); // 3 new addresses
-		assertEquals(getUpdatesRegistry(Address.class).size(), 1); // 1 existing address
-		assertNull(getUpdatesRegistry(Person.class)); // no existing person
+		assertEquals(getInserts(Person.class).size(), 1); // 1 new person
+		assertEquals(getInserts(Address.class).size(), 3); // 3 new addresses
+		assertEquals(getUpdates(Address.class).size(), 1); // 1 existing address
+		assertNull(getUpdates(Person.class)); // no existing person
 		
-		assertEquals(getUpdatesRegistry(Address.class).get(0).get("STREET"), "Featherston st 49");
+		assertEquals(getUpdates(Address.class).get(0).get("STREET"), "Featherston st 49");
 		
 		//describe(destination);
 	}
 
-	private static List<Map<String, Object>> getInsertsRegistry(Class<?> type) {
+	private static List<Map<String, Object>> getInserts(Class<?> type) {
 		return WriteDestinationImpl.insertsRegistry.get(type);
 	}
 
-	private List<Map<String, Object>> getUpdatesRegistry(Class<?> type) {
+	private List<Map<String, Object>> getUpdates(Class<?> type) {
 		return WriteDestinationImpl.updatesRegistry.get(type);
 	}
 	
