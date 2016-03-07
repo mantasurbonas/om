@@ -2,18 +2,69 @@ package gugit.om.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-
-import java.util.List;
-import java.util.Map;
-
+import gugit.om.InsertData;
 import gugit.om.OM;
-import gugit.om.test.helpers.WriteDestinationImpl;
+import gugit.om.PersistInfoRegistry;
+import gugit.om.UpdateData;
 import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
+
+import java.util.List;
 
 import org.junit.Test;
 
 public class MasterDetailWritingTest {
+	
+	@Test
+	public void testInsertIncompleteMaster() {
+		Person person = new Person();
+		person.setName("John Smith");
+		
+		PersistInfoRegistry repository = new PersistInfoRegistry();
+		new OM<Person>(Person.class).writeEntity(person, repository);
+		
+		List<InsertData<?>> personInserts = repository.getInserts(Person.class);
+		assertEquals(personInserts.size(), 1);
+		assertEquals(personInserts.get(0).get("NAME"), person.getName());
+		
+		List<InsertData<?>> addressInserts = repository.getInserts(Address.class);
+		assertNull(addressInserts);
+	}
+
+	@Test
+	public void testUpdateIncompleteMaster(){
+		Person person = new Person();
+		person.setId(456);
+		
+		PersistInfoRegistry registry = new PersistInfoRegistry();
+		new OM<Person>(Person.class).writeEntity(person, registry);
+		
+		List<UpdateData<?>> updates = registry.getUpdates(Person.class);
+		assertEquals(updates.size(), 1);
+		assertNull(updates.get(0).get("NAME"));
+		assertEquals(person.getId(), updates.get(0).getIdValue());
+	}
+	
+	@Test
+	public void testInsertMasterDetail(){
+		Address address = new Address();
+			address.setCountry("Antarctica");
+
+		Person person = new Person();
+			person.setName("John Smith");
+			person.setCurrentAddress(address);
+		
+		PersistInfoRegistry registry = new PersistInfoRegistry();
+		new OM<Person>(Person.class).writeEntity(person, registry );
+		
+		List<InsertData<?>> personInserts = registry.getInserts(Person.class);
+		assertEquals(personInserts.size(), 1);
+		
+		List<InsertData<?>> addressInserts = registry.getInserts(Address.class);
+		assertEquals(addressInserts.size(), 1);
+		assertEquals(addressInserts.get(0).get("COUNTRY"), address.getCountry());
+		assertNull(addressInserts.get(0).get("CITY"));
+	}
 	
 	@Test
 	public void testMasterDetailWriting() {
@@ -31,28 +82,21 @@ public class MasterDetailWritingTest {
 			person.getPreviousAddresses().add(address3);
 			person.getPreviousAddresses().add(address4);
 		
-		WriteDestinationImpl destination = new WriteDestinationImpl(Person.class);
-		WriteDestinationImpl.reset();
 		
+		PersistInfoRegistry registry = new PersistInfoRegistry();
 		new OM<Person>(Person.class)
-			.writeEntity(person, destination );
+			.writeEntity(person, registry );
 		
-		assertEquals(getInserts(Person.class).size(), 1); // 1 new person
-		assertEquals(getInserts(Address.class).size(), 3); // 3 new addresses
-		assertEquals(getUpdates(Address.class).size(), 1); // 1 existing address
-		assertNull(getUpdates(Person.class)); // no existing person
-		
-		assertEquals(getUpdates(Address.class).get(0).get("STREET"), "Featherston st 49");
-		
-		//describe(destination);
-	}
+		assertEquals(registry.getInserts(Person.class).size(), 1); // 1 new person
+		assertEquals(registry.getInserts(Address.class).size(), 3); // 3 new addresses
+		assertEquals(registry.getInserts(Address.class).get(0).get("STREET"), address1.getStreet());
+		assertEquals(registry.getInserts(Address.class).get(2).get("STREET"), address4.getStreet());
 
-	private static List<Map<String, Object>> getInserts(Class<?> type) {
-		return WriteDestinationImpl.insertsRegistry.get(type);
-	}
+		assertNull(registry.getUpdates(Person.class)); // no existing person
 
-	private List<Map<String, Object>> getUpdates(Class<?> type) {
-		return WriteDestinationImpl.updatesRegistry.get(type);
+		assertEquals(registry.getUpdates(Address.class).size(), 1); // 1 existing address
+		assertEquals(registry.getUpdates(Address.class).get(0).getIdValue(), address3.getId());
+		assertEquals(registry.getUpdates(Address.class).get(0).get("STREET"), address3.getStreet());
 	}
 	
 	private static Address makeAddress(String street){
@@ -62,19 +106,5 @@ public class MasterDetailWritingTest {
 			rez.setStreet(street);
 		return rez;
 	}	
-
-	
-//	private void describe(WriteDestinationImpl destination) {
-//		
-//		for (Class<?> clazz: WriteDestinationImpl.insertsRegistry.keySet()){
-//			System.out.println("insert "+clazz.getSimpleName()+":");
-//			System.out.println(WriteDestinationImpl.insertsRegistry.get(clazz));
-//		}
-//		
-//		for (Class<?> clazz: WriteDestinationImpl.updatesRegistry.keySet()){
-//			System.out.println("update "+clazz.getSimpleName()+":");
-//			System.out.println(WriteDestinationImpl.updatesRegistry.get(clazz));
-//		}
-//	}
 
 }

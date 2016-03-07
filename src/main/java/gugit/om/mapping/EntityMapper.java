@@ -140,7 +140,7 @@ public class EntityMapper<E> {
 			writer.startNew(entityName);
 		else{
 			writer.startExisting(entityName);
-			writer.writeId(id);
+			writer.writeId(idMapping.getColName(), id);
 		}
 		
 		for (FieldMapping mapping: fieldMappings){
@@ -158,10 +158,8 @@ public class EntityMapper<E> {
 				
 			case ONE_TO_ONE:
 				Object sibling = invokeGetter(entity, mapping);
-				if (sibling == null)
-					return;
-				
-				mapping.getSubmapper().write(sibling, writer.createWriterFor(mapping.getSubmapper().entityClass));
+				if (sibling != null)
+					mapping.getSubmapper().write(sibling, writer.createWriterFor(mapping.getSubmapper().entityClass));
 				
 				break;
 				

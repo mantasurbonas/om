@@ -27,6 +27,10 @@ public class OM <E>{
 	public void writeEntity(E entity, WriteDestination destination){
 		rootEntityMapper.write(entity, destination);
 	}
+
+	public void writeEntity(E entity, PersistInfoRegistry registry){
+		rootEntityMapper.write(entity, registry.createWriteDestination(entity.getClass()));
+	}
 	
 	public E readEntity(Object[] array){
 		return readEntity(new ArrayIterator<Object>(array));
