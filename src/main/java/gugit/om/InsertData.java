@@ -1,61 +1,54 @@
 package gugit.om;
 
+import gugit.om.mapping.EntityMetadata;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class InsertData<E> {
 
-	private Class<E> entityClass;
-	private String entityName;
+	private E entity;
+	private EntityMetadata<E> metadata;
 	
 	private Map<String, Object> data;
 
-	public InsertData(Class<E> entityClass){
-		this(entityClass, new HashMap<String, Object>());
+
+	public InsertData(E entity, EntityMetadata<E> metadata){
+		this(entity, metadata, new HashMap<String, Object>());
 	}
 	
-	public InsertData(Class<E> entityClass, Map<String, Object> data){
-		this.entityClass = entityClass;
-		this.data = data;
-		this.entityName = "???";
-	}
-	
-	public InsertData(Class<E> entityClass, final String entityName){
-		this.entityClass = entityClass;
-		this.entityName = entityName;
-		this.data = new HashMap<String, Object>();
-	}
+	public InsertData(E entity, EntityMetadata<E> metadata, Map<String, Object> data){
+		this.setEntity(entity);
+		this.setData(data);
+		this.metadata = metadata;
+	}	
 	
 	public void add(String propName, Object propValue){
-		data.put(propName, propValue);
-	}
-	
-	public Class<E> getEntityClass() {
-		return entityClass;
-	}
-
-	public void setEntityClass(Class<E> entityClass) {
-		this.entityClass = entityClass;
-	}
-
-	public String getEntityName() {
-		return entityName;
-	}
-
-	public void setEntityName(String entityName) {
-		this.entityName = entityName;
+		getData().put(propName, propValue);
 	}
 
 	public Object get(String propertyName) {
-		return data.get(propertyName);
+		return getData().get(propertyName);
 	}
 	
+	public E getEntity() {
+		return entity;
+	}
+
+	public void setEntity(E entity) {
+		this.entity = entity;
+	}
+
 	public Map<String, Object> getData() {
 		return data;
 	}
 
 	public void setData(Map<String, Object> data) {
 		this.data = data;
+	}
+
+	public EntityMetadata<E> getMetadata() {
+		return metadata;
 	}
 
 }

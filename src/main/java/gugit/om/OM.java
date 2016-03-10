@@ -1,7 +1,9 @@
 package gugit.om;
 
-import gugit.om.mapping.EntityMapper;
-import gugit.om.mapping.EntityMapperFactory;
+import gugit.om.mapping.EntityReader;
+import gugit.om.mapping.EntityReaderRegistry;
+import gugit.om.mapping.EntityWriter;
+import gugit.om.mapping.EntityWriterRegistry;
 import gugit.om.utils.ArrayIterator;
 
 import java.util.LinkedList;
@@ -11,25 +13,32 @@ import java.util.List;
 
 public class OM <E>{
 	
-	private EntityMapper<E> rootEntityMapper;
+	private EntityReaderRegistry readerRegistry = new EntityReaderRegistry();
+	private EntityWriterRegistry writerRegistry = new EntityWriterRegistry();
+	
+	private Class<E> entityClass;
 	
 	public OM(Class<E> entityClass) {
-		this.rootEntityMapper  = EntityMapperFactory.createMapper(entityClass);
+		this.entityClass = entityClass;
 	}
 	
 	/***
-	 * call this first if you want to reuse this object
+	 * call this before reusins this same object next time
 	 */
 	public void reset(){
-		rootEntityMapper.reset();
+		readerRegistry.resetAll();
+		writerRegistry.resetAll();
 	}
 
-	public void writeEntity(E entity, WriteDestination destination){
-		rootEntityMapper.write(entity, destination);
+	public void writeEntity(E entity, WriteBatch batch){
+		EntityWriter<E> writer = writerRegistry.getEntityWriterFor(entityClass);
+		writer.write(entity, batch);
 	}
-
-	public void writeEntity(E entity, PersistInfoRegistry registry){
-		rootEntityMapper.write(entity, registry.createWriteDestination(entity.getClass()));
+	
+	public WriteBatch writeEntity(E entity){
+		WriteBatch result = new WriteBatch();
+		writeEntity(entity, result);
+		return result;
 	}
 	
 	public E readEntity(Object[] array){
@@ -37,12 +46,15 @@ public class OM <E>{
 	}
 	
 	public E readEntity(ArrayIterator<Object> array){
-		E res = rootEntityMapper.read(array);
+		EntityReader<E> reader = readerRegistry.getEntityReaderFor(entityClass);
+		E res = reader.read(array);
 		assertAllDataWasRead(array);
 		return res;
 	}
 	
 	public LinkedList<E> readEntities(List<Object []> dataRows){
+		reset();
+		
 		LinkedList<E> result = new LinkedList<E>();
 
 		ArrayIterator<Object> row = new ArrayIterator<Object>();

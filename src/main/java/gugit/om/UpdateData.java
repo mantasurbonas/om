@@ -1,60 +1,49 @@
 package gugit.om;
 
+import gugit.om.mapping.EntityMetadata;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class UpdateData<E> {
 
-	private String entityName;
-	private Class<E> entityClass;
+	private EntityMetadata<E> metadata;
+	private E entity;
 	
-	private String idName;
 	private Object idValue;
 	
 	private Map<String, Object> data = new HashMap<String, Object>();
 
-	public UpdateData(Class<E> entityClass, String idName, Object idValue, Map<String, Object> data){
-		this.setEntityClass(entityClass);
-		this.setID(idName, idValue);
+	public UpdateData(E entity, EntityMetadata<E> metadata, Object idValue, Map<String, Object> data){
+		this.setEntity(entity);
+		this.setIdValue(idValue);
 		this.setData(data);
+		this.setMetadata(metadata);
 	}
 	
-	public UpdateData(Class<E> entityClass, final String entityName){
-		this.setEntityClass(entityClass);
-		this.setEntityName(entityName);
-	}
-
-	public void setID(String propName, Object value){
-		this.setIdName(propName);
-		this.setIdValue(value);
+	public UpdateData(E entity, EntityMetadata<E> metadata){
+		this.setEntity(entity);
+		this.setMetadata(metadata);
 	}
 	
 	public void add(String propName, Object value){
 		getData().put(propName, value);
 	}
 	
-	public String getEntityName() {
-		return entityName;
+	public EntityMetadata<E> getMetadata() {
+		return metadata;
 	}
 
-	public void setEntityName(String entityName) {
-		this.entityName = entityName;
+	public void setMetadata(EntityMetadata<E> metadata) {
+		this.metadata = metadata;
 	}
 
-	public Class<E> getEntityClass() {
-		return entityClass;
+	public E getEntity() {
+		return entity;
 	}
 
-	public void setEntityClass(Class<E> entityClass) {
-		this.entityClass = entityClass;
-	}
-
-	public String getIdName() {
-		return idName;
-	}
-
-	public void setIdName(String idName) {
-		this.idName = idName;
+	public void setEntity(E entity) {
+		this.entity = entity;
 	}
 
 	public Object getIdValue() {

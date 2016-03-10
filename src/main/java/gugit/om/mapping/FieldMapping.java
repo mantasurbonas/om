@@ -1,5 +1,8 @@
 package gugit.om.mapping;
 
+import java.lang.reflect.Field;
+import java.util.Collection;
+
 import com.esotericsoftware.reflectasm.MethodAccess;
 
 public class FieldMapping {
@@ -17,72 +20,86 @@ public class FieldMapping {
 	private MethodAccess access;
 	
 	// how to set value on that field
-	private int setterName;
+	private int setterIndex;
 	
 	// how to retrieve value from that field
-	private int getterName;
+	private int getterIndex;
 
-	// optionally, name of a column
+	// in case of a simple column: optionally, name of a column
 	private String colName;
 	
-	// optionally, a helper used to deserialize a whole object for that property
-	private EntityMapper<?> subMapper;
+	// in case of a complex object: optionally, a description of this field 
+	private EntityMetadata<?> metadata;
 
 	
-	private FieldMapping(Type type){
+	FieldMapping(Type type){
 		this.type = type;
 	}
 	
-	private FieldMapping(String name, Type type, MethodAccess access, String getterName, String setterName){
-		this.colName = name;
+	FieldMapping(Field field, String colName, Type type, MethodAccess access){
+		this.colName = colName;
 		this.type = type;
 		this.access = access;
-		this.setterName = access.getIndex(setterName);
-		this.getterName = access.getIndex(getterName);
-	}
-	
-	
-	public static FieldMapping column(String name, MethodAccess access, String getterName, String setterName){
-		return new FieldMapping(name, Type.COLUMN, access, getterName, setterName); 
-	}
-	
-	public static FieldMapping dummy(){
-		return new FieldMapping(Type.IGNORE);
-	}
-	
-	public static FieldMapping oneToOne(MethodAccess access, String getterName, String setterName, EntityMapper<?> mapper){
-		FieldMapping res = new FieldMapping("<one2one>", Type.ONE_TO_ONE, access, getterName, setterName);
-			res.subMapper = mapper;
-		return res;
-	}
-	
-	public static FieldMapping oneToMany(MethodAccess access, String getterName, String setterName, EntityMapper<?> mapper){
-		FieldMapping res = new FieldMapping("one2many", Type.ONE_TO_MANY, access, getterName, setterName);
-			res.subMapper = mapper;
-		return res;
+		this.setterIndex = access.getIndex(setterName(field));
+		this.getterIndex = access.getIndex(getterName(field));
 	}
 
+	FieldMapping(Field field, Type type, MethodAccess access, EntityMetadata<?> metadata){
+		this.type = type;
+		this.access = access;
+		this.setterIndex = access.getIndex(setterName(field));
+		this.getterIndex = access.getIndex(getterName(field));
+		this.metadata = metadata;
+	}
+	
+	public void invokeSetter(Object entity, Object value){
+		access.invoke(entity, this.setterIndex, value);
+	}
+	
+	public Object invokeGetter(Object entity){
+		return access.invoke(entity, this.getterIndex);
+	}
+		
+	@SuppressWarnings("unchecked")
+	public void invokeAdder(Object entity, Object value) {
+		if (value == null)
+			return;
+		
+		@SuppressWarnings("rawtypes")
+		Collection collection = (Collection)invokeGetter(entity);
+		if (!collection.contains(value))
+			collection.add(value);
+	}
+	
 	public String getColName() {
 		return colName;
-	}
-
-	public int getSetterName() {
-		return setterName;
-	}
-
-	public int getGetterName() {
-		return getterName;
 	}
 
 	public Type getType() {
 		return type;
 	}
-
-	public MethodAccess getMethodAccess(){
-		return access;
+	
+	public EntityMetadata<?> getMetadata() {
+		return metadata;
 	}
 	
-	public EntityMapper<?> getSubmapper() {
-		return subMapper;
+	private static String getterName(Field field){
+		try {
+			return "get"+camelCase(field.getName());
+		} catch (SecurityException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static String setterName(Field field){
+		try {
+			return "set"+camelCase(field.getName());
+		} catch (SecurityException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	private static String camelCase(String name) {
+		return name.substring(0, 1).toUpperCase()+name.substring(1);
 	}
 }

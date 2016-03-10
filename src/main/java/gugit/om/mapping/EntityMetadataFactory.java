@@ -1,6 +1,7 @@
 package gugit.om.mapping;
 
 import gugit.om.annotations.Column;
+import gugit.om.annotations.Entity;
 import gugit.om.annotations.ID;
 import gugit.om.annotations.Ignore;
 import gugit.om.annotations.OneToMany;
@@ -11,24 +12,41 @@ import gugit.om.utils.ArrayIterator;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
-public class EntityMapperFactory{
 
-	public static <T> EntityMapper<T> createMapper(Class<T> entityClass){		
+/***
+ * creates a metadata about any object by looking at its annotations.
+ * 
+ * @author urbonman
+ *
+ */
+public class EntityMetadataFactory{
+
+	public static <T> EntityMetadata<T> createMetadata(Class<T> entityClass){		
 		ArrayIterator<Field> fields = new ArrayIterator<Field>(entityClass.getFields());
 		
-		EntityMapper<T> entityMapper = new EntityMapper<T>(entityClass);
-			mapIDField(entityMapper, fields);
-			mapFields(entityMapper, fields);
-
-		return entityMapper;
+		EntityMetadata<T> entityMetadata = new EntityMetadata<T>(entityClass);
+		
+		setEntityName(entityMetadata, entityClass);
+		setIDField(entityMetadata, fields);
+		addFields(entityMetadata, fields);
+	
+		return entityMetadata;
 	}
 
-	private static <T> void mapIDField(EntityMapper<T> entityMapper, ArrayIterator<Field> fields) {
+	private static <T> void setEntityName(EntityMetadata<T> metadata, Class<T> clazz) {
+		Entity annotation = clazz.getAnnotation(Entity.class);
+		if (annotation == null || annotation.name() == null || annotation.name().trim().isEmpty())
+			metadata.setEntityName (clazz.getSimpleName());
+		else
+			metadata.setEntityName(annotation.name());
+	}
+	
+	private static <T> void setIDField(EntityMetadata<T> entityMetadata, ArrayIterator<Field> fields) {
 		Field idField = findID(fields);
-		entityMapper.setIDField(idField, getIdColumnName(idField.getAnnotations()));
+		entityMetadata.setIDField(idField, getIdColumnName(idField.getAnnotations()));
 	}
 
-	private static <T> void mapFields(EntityMapper<T> entityMapper, ArrayIterator<Field> fields) {
+	private static <T> void addFields(EntityMetadata<T> entityMetadata, ArrayIterator<Field> fields) {
 		while (!fields.isFinished()){
 			Field field = fields.getNext();
 			Annotation[] annotations = field.getAnnotations();
@@ -37,24 +55,24 @@ public class EntityMapperFactory{
 				throw new RuntimeException("ID field must be one and only one");
 			
 			if (isDummy(annotations))
-				entityMapper.addDummyField(field);
+				entityMetadata.addDummyField(field);
 			else
 			if (isTransient(annotations))
-				entityMapper.addTransientField(field);
+				entityMetadata.addTransientField(field);
 			else
 			if (isColumn(annotations))
-				entityMapper.addColumnField(field, getColumnName(annotations));
+				entityMetadata.addColumnField(field, getColumnName(annotations));
 			else
 			if (isOneToOne(annotations)){
 				Class<?> fieldClass = field.getType();
-				EntityMapper<?> one2oneMapper = createMapper(fieldClass);
-				entityMapper.addOneToOneMapper(field, one2oneMapper);
+				EntityMetadata<?> fieldMetadatar = createMetadata(fieldClass);
+				entityMetadata.addOneToOneField(field, fieldMetadatar);
 			}
 			else
 			if (isOneToMany(annotations)){
 				Class<?> oneToManyType = getOneToManyType(annotations);
-				EntityMapper<?> oneToManyMapper = createMapper(oneToManyType);
-				entityMapper.addOneToManyMapper(field, oneToManyMapper);
+				EntityMetadata<?> oneToManyMetadata = createMetadata(oneToManyType);
+				entityMetadata.addOneToManyField(field, oneToManyMetadata);
 			}
 		}
 	}

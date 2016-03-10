@@ -4,8 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import gugit.om.InsertData;
 import gugit.om.OM;
-import gugit.om.PersistInfoRegistry;
+import gugit.om.WriteBatch;
 import gugit.om.UpdateData;
+import gugit.om.mapping.NullWriteValue;
 import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
 
@@ -20,14 +21,13 @@ public class MasterDetailWritingTest {
 		Person person = new Person();
 		person.setName("John Smith");
 		
-		PersistInfoRegistry repository = new PersistInfoRegistry();
-		new OM<Person>(Person.class).writeEntity(person, repository);
+		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
 		
-		List<InsertData<?>> personInserts = repository.getInserts(Person.class);
+		List<InsertData<?>> personInserts = batch.getInserts(Person.class);
 		assertEquals(personInserts.size(), 1);
 		assertEquals(personInserts.get(0).get("NAME"), person.getName());
 		
-		List<InsertData<?>> addressInserts = repository.getInserts(Address.class);
+		List<InsertData<?>> addressInserts = batch.getInserts(Address.class);
 		assertNull(addressInserts);
 	}
 
@@ -36,12 +36,11 @@ public class MasterDetailWritingTest {
 		Person person = new Person();
 		person.setId(456);
 		
-		PersistInfoRegistry registry = new PersistInfoRegistry();
-		new OM<Person>(Person.class).writeEntity(person, registry);
+		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
 		
-		List<UpdateData<?>> updates = registry.getUpdates(Person.class);
+		List<UpdateData<?>> updates = batch.getUpdates(Person.class);
 		assertEquals(updates.size(), 1);
-		assertNull(updates.get(0).get("NAME"));
+		assertEquals(updates.get(0).get("NAME"), NullWriteValue.instance());
 		assertEquals(person.getId(), updates.get(0).getIdValue());
 	}
 	
@@ -54,16 +53,15 @@ public class MasterDetailWritingTest {
 			person.setName("John Smith");
 			person.setCurrentAddress(address);
 		
-		PersistInfoRegistry registry = new PersistInfoRegistry();
-		new OM<Person>(Person.class).writeEntity(person, registry );
+		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
 		
-		List<InsertData<?>> personInserts = registry.getInserts(Person.class);
+		List<InsertData<?>> personInserts = batch.getInserts(Person.class);
 		assertEquals(personInserts.size(), 1);
 		
-		List<InsertData<?>> addressInserts = registry.getInserts(Address.class);
+		List<InsertData<?>> addressInserts = batch.getInserts(Address.class);
 		assertEquals(addressInserts.size(), 1);
 		assertEquals(addressInserts.get(0).get("COUNTRY"), address.getCountry());
-		assertNull(addressInserts.get(0).get("CITY"));
+		assertEquals(addressInserts.get(0).get("CITY"), NullWriteValue.instance());
 	}
 	
 	@Test
@@ -83,20 +81,18 @@ public class MasterDetailWritingTest {
 			person.getPreviousAddresses().add(address4);
 		
 		
-		PersistInfoRegistry registry = new PersistInfoRegistry();
-		new OM<Person>(Person.class)
-			.writeEntity(person, registry );
+		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
 		
-		assertEquals(registry.getInserts(Person.class).size(), 1); // 1 new person
-		assertEquals(registry.getInserts(Address.class).size(), 3); // 3 new addresses
-		assertEquals(registry.getInserts(Address.class).get(0).get("STREET"), address1.getStreet());
-		assertEquals(registry.getInserts(Address.class).get(2).get("STREET"), address4.getStreet());
+		assertEquals(batch.getInserts(Person.class).size(), 1); // 1 new person
+		assertEquals(batch.getInserts(Address.class).size(), 3); // 3 new addresses
+		assertEquals(batch.getInserts(Address.class).get(0).get("STREET"), address1.getStreet());
+		assertEquals(batch.getInserts(Address.class).get(2).get("STREET"), address4.getStreet());
 
-		assertNull(registry.getUpdates(Person.class)); // no existing person
+		assertNull(batch.getUpdates(Person.class)); // no existing person
 
-		assertEquals(registry.getUpdates(Address.class).size(), 1); // 1 existing address
-		assertEquals(registry.getUpdates(Address.class).get(0).getIdValue(), address3.getId());
-		assertEquals(registry.getUpdates(Address.class).get(0).get("STREET"), address3.getStreet());
+		assertEquals(batch.getUpdates(Address.class).size(), 1); // 1 existing address
+		assertEquals(batch.getUpdates(Address.class).get(0).getIdValue(), address3.getId());
+		assertEquals(batch.getUpdates(Address.class).get(0).get("STREET"), address3.getStreet());
 	}
 	
 	private static Address makeAddress(String street){
