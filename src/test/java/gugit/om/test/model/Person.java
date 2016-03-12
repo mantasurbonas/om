@@ -2,24 +2,24 @@ package gugit.om.test.model;
 
 import gugit.om.annotations.Column;
 import gugit.om.annotations.ID;
-import gugit.om.annotations.OneToMany;
-import gugit.om.annotations.OneToOne;
+import gugit.om.annotations.DetailEntities;
+import gugit.om.annotations.DetailEntity;
 
 import java.util.LinkedList;
 import java.util.List;
 
 public class Person {
 
-	@ID
+	@ID(name="ID")
 	public Integer id;
 	
 	@Column(name="NAME")
 	public String name;
 	
-	@OneToOne
+	@DetailEntity(myProperty="id", detailColumn="PERSON_ID")
 	public Address currentAddress;
 	
-	@OneToMany(type=Address.class)
+	@DetailEntities(myProperty="id", detailClass=Address.class, detailColumn="PERSON_ID")
 	public List<Address> previousAddresses = new LinkedList<Address>();
 
 	public Integer getId() {

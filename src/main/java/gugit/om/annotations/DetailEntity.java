@@ -8,7 +8,10 @@ import java.lang.annotation.Target;
 
 @Target(FIELD)
 @Retention(RUNTIME)
-public @interface OneToMany {
+public @interface DetailEntity {
 
-	Class<?> type();
+	String myProperty();
+	
+	String detailColumn();
+	
 }

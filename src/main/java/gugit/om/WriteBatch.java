@@ -1,6 +1,6 @@
 package gugit.om;
 
-import gugit.om.mapping.EntityMetadata;
+import gugit.om.metadata.EntityMetadata;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -28,22 +28,22 @@ public class WriteBatch {
 		return inserts;
 	}
 
-	public <E> void addInserts(E entity, EntityMetadata<E> metadata, Map<String, Object> props) {
+	public void addInserts(Object entity, EntityMetadata<?> metadata, Map<String, Object> props) {
 		List<InsertData<?>> insertList = getInserts().get(entity.getClass());
 		if (insertList == null){
 			insertList = new LinkedList<InsertData<?>>();
 			getInserts().put(entity.getClass(), insertList);
 		}
-		insertList.add(new InsertData<E>(entity, metadata, props));
+		insertList.add(new InsertData(entity, metadata, props));
 	}
 
-	public <E> void addUpdates(E entity, EntityMetadata<E> metadata, Object idValue, Map<String, Object> props) {
+	public void addUpdates(Object entity, EntityMetadata<?> metadata, Map<String, Object> props) {
 		List<UpdateData<?>> updatesList = getUpdates().get(entity.getClass());
 		if (updatesList == null){
 			updatesList = new LinkedList<UpdateData<?>>();
 			getUpdates().put(entity.getClass(), updatesList);
 		}
-		updatesList.add(new UpdateData<E>(entity, metadata, idValue, props));	
+		updatesList.add(new UpdateData(entity, metadata, props));	
 	}
-	
+
 }

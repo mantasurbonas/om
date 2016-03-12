@@ -1,6 +1,6 @@
 package gugit.om;
 
-import gugit.om.mapping.EntityMetadata;
+import gugit.om.metadata.EntityMetadata;
 
 import java.util.HashMap;
 import java.util.Map;

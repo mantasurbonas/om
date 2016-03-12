@@ -2,10 +2,11 @@ package gugit.om.test.model;
 
 import gugit.om.annotations.Column;
 import gugit.om.annotations.ID;
+import gugit.om.annotations.MasterEntity;
 
 public class Address {
 
-	@ID
+	@ID(name="ID")
 	public Integer id;
 	
 	@Column(name="COUNTRY")
@@ -17,6 +18,9 @@ public class Address {
 	@Column(name="STREET")
 	public String street;
 
+	@MasterEntity(masterProperty="id", myColumn="PERSON_ID")
+	public Person person;
+	
 	public Integer getId() {
 		return id;
 	}
@@ -51,5 +55,13 @@ public class Address {
 	
 	public String toString(){
 		return "Address #"+id+": "+city+", "+street+", "+country;
+	}
+
+	public Person getPerson() {
+		return person;
+	}
+
+	public void setPerson(Person person) {
+		this.person = person;
 	}
 }

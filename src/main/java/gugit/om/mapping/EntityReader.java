@@ -1,119 +1,71 @@
 package gugit.om.mapping;
 
+import gugit.om.metadata.EntityMetadata;
+import gugit.om.metadata.FieldMetadata;
 import gugit.om.utils.ArrayIterator;
 
-/***
- * knows how to create a particular object graph from a flat object array.
- * 
- * @author urbonman
- */
-public class EntityReader <E>{
-	
-	// information about the type of entities I work with
-	private EntityMetadata<E> metadata;
-		
-	// cached ID of the entity in a previous row
-	private Object lastId;
-	
-	// cached entity. It will be re-used if a previous row had the same ID
-	private E entity;
 
-	// where to find entity mappers for other entity types, should I need it
-	private EntityReaderRegistry mapperRegistry;	
+public class EntityReader <E> implements IReader{
+
+	private EntityMetadata<E> entityMetadata;
 	
-	
-	public EntityReader(EntityMetadata<E> metadata, EntityReaderRegistry mapperRegistry){
-		this.metadata = metadata;
-		this.mapperRegistry = mapperRegistry;
+	private Object cachedId;
+	private E cachedEntity;
+
+	public EntityReader(EntityMetadata<E> metadata){
+		this.entityMetadata = metadata;
 	}
 	
 	public void reset(){
-		entity = null;
-		lastId = null;
+		cachedId = null;
+		cachedEntity = null;
 	}
 	
-	public E read(ArrayIterator<Object> row){
-		Object id = row.peek();
+	public E read(ArrayIterator<Object> iterator){
+		Object id = iterator.peek();
 		
-		if (id == null){
-			skipReadingCells(row);
-			return null;
-		}
-		
-		boolean sameEntity = id.equals(lastId);
-		
-		if (!sameEntity){
-			entity = metadata.createEntity(id);
-			lastId = id;
-		}			
-		
-		for (FieldMapping fieldMapping : metadata.getFieldMappings()){
+		if (id == null)
+			return skipReading(iterator);
+		else
+		if (id.equals(cachedId))
+			return (E)readCachedEntity(iterator);
+		else
+			return (E)readNewEntity(id, iterator);
+	}
+	
+	private E readCachedEntity(ArrayIterator<Object> iterator){
+		for (FieldMetadata fieldMetadata: entityMetadata.getFieldMetadataList()){
 			
-			switch(fieldMapping.getType()){
-				case IGNORE: 
-					row.next();
-				break;
-				case COLUMN:
-				{
-					if (!sameEntity)
-						fieldMapping.invokeSetter(entity, row.peek());
-					row.next();
-				}
-				break;
-				case ONE_TO_ONE:
-				{
-					EntityReader<?> submapper = mapperRegistry.getEntityReaderFor(fieldMapping.getMetadata().getEntityClass());
-					Object siblingEntity = submapper.read(row);
-					fieldMapping.invokeSetter(entity, siblingEntity);
-				}
-				break;
-				case ONE_TO_MANY:
-				{
-					EntityReader<?> submapper = mapperRegistry.getEntityReaderFor(fieldMapping.getMetadata().getEntityClass());
-					Object detailEntity = submapper.read(row);
-					fieldMapping.invokeAdder(entity, detailEntity);
-				}
-				break;
-				default:
-					throw new RuntimeException("not implemented mapping type: "+fieldMapping.getType());
-			}												
+			Object value = fieldMetadata.getReader().read(iterator);
+			
+			if (fieldMetadata.getBinding().isCollection())
+				fieldMetadata.getBinding().assignValueTo(cachedEntity, value);
 		}
-					
+		
+		return cachedEntity;
+	}
+	
+	private E readNewEntity(Object newId, ArrayIterator<Object> iterator){
+		E entity = entityMetadata.createEntity(newId);
+		cachedEntity = entity;
+		cachedId = newId;
+		
+		for (FieldMetadata fieldMetadata: entityMetadata.getFieldMetadataList()){
+			Object value = fieldMetadata.getReader().read(iterator);
+			fieldMetadata.getBinding().assignValueTo(entity, value);
+		}
+		
 		return entity;
 	}
-
-	public E getEntity() {
-		return entity;
-	}	
 	
-	
-	private void skipReadingCells(ArrayIterator<Object> row) {
-		for (FieldMapping fieldMapping: metadata.getFieldMappings()){
-			switch(fieldMapping.getType()){
-				case IGNORE: 
-					row.next();
-				break;
-				case COLUMN:
-					row.next();
-				break;
-				case ONE_TO_ONE:
-				{
-					Class<?> siblingClass = fieldMapping.getMetadata().getEntityClass();
-					EntityReader<?> siblingMapper = mapperRegistry.getEntityReaderFor(siblingClass);
-					siblingMapper.read(row);
-				}
-				break;
-				case ONE_TO_MANY:
-				{
-					Class<?> childClass = fieldMapping.getMetadata().getEntityClass();
-					EntityReader<?> childMapper = mapperRegistry.getEntityReaderFor(childClass);
-					childMapper.read(row);
-				}
-				break;
-				default:
-					throw new RuntimeException("not implemented mapping type: "+fieldMapping.getType());
-			}		
-		}
+	private E skipReading(ArrayIterator<Object> iterator){
+		cachedEntity = null;
+		cachedId = null;
+		
+		for (FieldMetadata fieldMetadata: entityMetadata.getFieldMetadataList())
+			fieldMetadata.getReader().read(iterator);
+		
+		return null;
 	}
-
+	
 }

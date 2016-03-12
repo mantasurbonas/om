@@ -1,9 +1,9 @@
 package gugit.om;
 
 import gugit.om.mapping.EntityReader;
-import gugit.om.mapping.EntityReaderRegistry;
 import gugit.om.mapping.EntityWriter;
-import gugit.om.mapping.EntityWriterRegistry;
+import gugit.om.metadata.EntityMetadata;
+import gugit.om.metadata.EntityMetadataFactory;
 import gugit.om.utils.ArrayIterator;
 
 import java.util.LinkedList;
@@ -13,26 +13,25 @@ import java.util.List;
 
 public class OM <E>{
 	
-	private EntityReaderRegistry readerRegistry = new EntityReaderRegistry();
-	private EntityWriterRegistry writerRegistry = new EntityWriterRegistry();
-	
-	private Class<E> entityClass;
+	private EntityReader<E> entityReader;
+	private EntityWriter<E> entityWriter;
 	
 	public OM(Class<E> entityClass) {
-		this.entityClass = entityClass;
+		EntityMetadata<E> metadata = new EntityMetadataFactory().createMetadata(entityClass);
+	
+		entityWriter = new EntityWriter<E>(metadata);
+		entityReader = new EntityReader<E>(metadata);
 	}
 	
 	/***
-	 * call this before reusins this same object next time
+	 * call this before reusing this same object next time
 	 */
 	public void reset(){
-		readerRegistry.resetAll();
-		writerRegistry.resetAll();
+		entityReader.reset();
 	}
 
 	public void writeEntity(E entity, WriteBatch batch){
-		EntityWriter<E> writer = writerRegistry.getEntityWriterFor(entityClass);
-		writer.write(entity, batch);
+		entityWriter.write(entity, null, batch);
 	}
 	
 	public WriteBatch writeEntity(E entity){
@@ -46,8 +45,7 @@ public class OM <E>{
 	}
 	
 	public E readEntity(ArrayIterator<Object> array){
-		EntityReader<E> reader = readerRegistry.getEntityReaderFor(entityClass);
-		E res = reader.read(array);
+		E res = entityReader.read(array);
 		assertAllDataWasRead(array);
 		return res;
 	}
@@ -63,11 +61,10 @@ public class OM <E>{
 			row.setData(array); // reusing iterator object
 			
 			E entity = readEntity(row);
-			if (entity == previousEntity)
-				continue;
-			
-			result.add(entity);
-			previousEntity = entity;
+			if (entity != previousEntity){
+				result.add(entity);
+				previousEntity = entity;
+			}
 		}
 		
 		return result;

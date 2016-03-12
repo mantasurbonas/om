@@ -1,86 +1,36 @@
 package gugit.om.mapping;
 
 import gugit.om.WriteBatch;
+import gugit.om.metadata.EntityMetadata;
+import gugit.om.metadata.FieldMetadata;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-/***
- * konws how to create WriteBatch'es from an object graph
- * 
- * @author urbonman
- */
-public class EntityWriter <E>{
-
-	// information about the type of entities I work with
-	private EntityMetadata<E> metadata;
-		
-	// where to find entity mappers for other entity types, should I need it
-	private EntityWriterRegistry writerRegistry;	
+public class EntityWriter <E> implements IWriter{
 	
+	private EntityMetadata<E> entityMetadata;
 	
-	public EntityWriter(EntityMetadata<E> metadata, EntityWriterRegistry writerRegistry){
-		this.metadata = metadata;
-		this.writerRegistry = writerRegistry;
+	public EntityWriter(EntityMetadata<E> metadata){
+		this.entityMetadata = metadata;
 	}
 	
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public void write(E entity, WriteBatch batch){
-		Object id = metadata.getIdMapping().invokeGetter(entity);
+	public void write(Object entity, Map<String, Object> props, WriteBatch writeBatch){
+		if (entity == null)
+			return;
 		
-		Map<String, Object> props = new HashMap<String, Object>();
+		Object id = entityMetadata.getIdField().getBinding().retrieveValueFrom(entity);
 		
-		for (FieldMapping fieldMapping: metadata.getFieldMappings()){
-			
-			if (fieldMapping == metadata.getIdMapping())
-				continue;  // id fields are treated separately
-			
-			switch (fieldMapping.getType()){
-			
-			case IGNORE: 
-				break;
-				
-			case COLUMN: 
-				Object value = fieldMapping.invokeGetter(entity);
-				if (value == null)
-					value = NullWriteValue.instance();
-				props.put(fieldMapping.getColName(), value);
-				break;
-				
-			case ONE_TO_ONE:
-				Object sibling = fieldMapping.invokeGetter(entity);
-				if (sibling != null){
-					Class<?> siblingClass = fieldMapping.getMetadata().getEntityClass();
-					EntityWriter siblingWriter = writerRegistry.getEntityWriterFor(siblingClass);
-					siblingWriter.write(sibling, batch);
-				}
-				break;
-				
-			case ONE_TO_MANY:
-			{
-				Collection children = (Collection) fieldMapping.invokeGetter(entity);
-				Class<?> childClass = fieldMapping.getMetadata().getEntityClass();
-				EntityWriter childWriter = writerRegistry.getEntityWriterFor(childClass);
-				for (Object child: children)
-					if (child != null)
-						childWriter.write(child, batch);
-			}
-			break;
-				
-			default:
-				throw new RuntimeException("not implemented");
-			}
+		props = new HashMap<String, Object>();
+		
+		for (FieldMetadata fieldMetadata: entityMetadata.getFieldMetadataList()){
+			Object fieldValue = fieldMetadata.getBinding().retrieveValueFrom(entity);
+			fieldMetadata.getWriter().write(fieldValue, props, writeBatch);
 		}
 		
 		if (id == null)
-			batch.addInserts(entity, metadata, props);
+			writeBatch.addInserts(entity, entityMetadata, props);
 		else
-			batch.addUpdates(entity, metadata, id, props);
+			writeBatch.addUpdates(entity, entityMetadata, props);
 	}
-	
-	public void reset(){
-		; // TODO
-	}
-	
 }

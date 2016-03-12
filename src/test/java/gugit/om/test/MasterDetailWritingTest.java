@@ -40,8 +40,8 @@ public class MasterDetailWritingTest {
 		
 		List<UpdateData<?>> updates = batch.getUpdates(Person.class);
 		assertEquals(updates.size(), 1);
-		assertEquals(updates.get(0).get("NAME"), NullWriteValue.instance());
-		assertEquals(person.getId(), updates.get(0).getIdValue());
+		assertEquals(updates.get(0).get("NAME"), NullWriteValue.getInstance());
+		assertEquals(person.getId(), updates.get(0).get("ID"));
 	}
 	
 	@Test
@@ -60,8 +60,8 @@ public class MasterDetailWritingTest {
 		
 		List<InsertData<?>> addressInserts = batch.getInserts(Address.class);
 		assertEquals(addressInserts.size(), 1);
-		assertEquals(addressInserts.get(0).get("COUNTRY"), address.getCountry());
-		assertEquals(addressInserts.get(0).get("CITY"), NullWriteValue.instance());
+		assertEquals(address.getCountry(), addressInserts.get(0).get("COUNTRY"));
+		assertEquals(NullWriteValue.getInstance(), addressInserts.get(0).get("CITY"));
 	}
 	
 	@Test
@@ -91,7 +91,7 @@ public class MasterDetailWritingTest {
 		assertNull(batch.getUpdates(Person.class)); // no existing person
 
 		assertEquals(batch.getUpdates(Address.class).size(), 1); // 1 existing address
-		assertEquals(batch.getUpdates(Address.class).get(0).getIdValue(), address3.getId());
+		assertEquals(batch.getUpdates(Address.class).get(0).get("ID"), address3.getId());
 		assertEquals(batch.getUpdates(Address.class).get(0).get("STREET"), address3.getStreet());
 	}
 	

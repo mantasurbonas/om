@@ -6,7 +6,7 @@ public class NullWriteValue {
 	
 	private NullWriteValue(){}
 	
-	public static NullWriteValue instance(){
+	public static NullWriteValue getInstance(){
 		return instance;
 	}
 	
