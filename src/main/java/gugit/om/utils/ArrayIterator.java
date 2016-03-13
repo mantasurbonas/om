@@ -42,4 +42,8 @@ public class ArrayIterator<E> {
 		this.offset = 0;
 	}
 
+	public int getPosition() {
+		return offset;
+	}
+
 }

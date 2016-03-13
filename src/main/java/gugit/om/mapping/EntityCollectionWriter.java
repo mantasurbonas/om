@@ -1,10 +1,9 @@
 package gugit.om.mapping;
 
-import gugit.om.WriteBatch;
+import gugit.om.WritePad;
 import gugit.om.metadata.EntityMetadata;
 
 import java.util.Collection;
-import java.util.Map;
 
 public class EntityCollectionWriter<E> extends EntityWriter<E> {
 
@@ -14,10 +13,10 @@ public class EntityCollectionWriter<E> extends EntityWriter<E> {
 
 	@SuppressWarnings("rawtypes")
 	@Override
-	public void write(Object value, Map<String, Object> props, WriteBatch writeBatch) {
+	public void write(Object value, WritePad<?> writePad) {
 		Collection collection = (Collection)value;
 		for (Object val: collection)
-			super.write(val, props, writeBatch);
+			super.write(val, writePad);
 	}
 
 }

@@ -1,11 +1,9 @@
 package gugit.om.mapping;
 
-import gugit.om.WriteBatch;
-
-import java.util.Map;
+import gugit.om.WritePad;
 
 public interface IWriter {
 
-	void write(Object value, Map<String, Object> props, WriteBatch writeBatch);
+	void write(Object value, WritePad<?> writePad);
 	
 }

@@ -35,7 +35,7 @@ public class InsertData<E> {
 		return entity;
 	}
 
-	public void setEntity(E entity) {
+	private void setEntity(E entity) {
 		this.entity = entity;
 	}
 
@@ -43,7 +43,7 @@ public class InsertData<E> {
 		return data;
 	}
 
-	public void setData(Map<String, Object> data) {
+	private void setData(Map<String, Object> data) {
 		this.data = data;
 	}
 
@@ -51,4 +51,8 @@ public class InsertData<E> {
 		return metadata;
 	}
 
+	public String toString(){
+		return "InsertData for "+metadata.getEntityClass().getSimpleName()
+				+" "+getData();
+	}
 }

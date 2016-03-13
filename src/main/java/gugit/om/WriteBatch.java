@@ -12,7 +12,11 @@ public class WriteBatch {
 	private Map<Class<?>, List<UpdateData<?>>> updates = new HashMap<Class<?>, List<UpdateData<?>>>();
 	private Map<Class<?>, List<InsertData<?>>> inserts = new HashMap<Class<?>, List<InsertData<?>>>();
 	
-	public List<UpdateData<?>> getUpdates(Class<?> type) {
+	public <E> WritePad<E> createWritePad(E entity, EntityMetadata<E> metadata){
+		return new WritePad<E>(entity, metadata, this);
+	}
+	
+	public List<UpdateData<?>> getAllUpdates(Class<?> type) {
 		return updates.get(type);
 	}
 	
@@ -20,7 +24,7 @@ public class WriteBatch {
 		return updates;
 	}
 	
-	public List<InsertData<?>> getInserts(Class<?> type) {
+	public List<InsertData<?>> getAllInserts(Class<?> type) {
 		return inserts.get(type);
 	}
 	
@@ -28,6 +32,7 @@ public class WriteBatch {
 		return inserts;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void addInserts(Object entity, EntityMetadata<?> metadata, Map<String, Object> props) {
 		List<InsertData<?>> insertList = getInserts().get(entity.getClass());
 		if (insertList == null){
@@ -37,6 +42,7 @@ public class WriteBatch {
 		insertList.add(new InsertData(entity, metadata, props));
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void addUpdates(Object entity, EntityMetadata<?> metadata, Map<String, Object> props) {
 		List<UpdateData<?>> updatesList = getUpdates().get(entity.getClass());
 		if (updatesList == null){

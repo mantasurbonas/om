@@ -46,7 +46,16 @@ public class EntityMetadata<E> {
 	}
 	
 	public E createEntity(Object id){
-		E entity = constructor.newInstance(); 
+		E entity;
+		try {
+			entity = //entityClass.newInstance();
+					constructor.newInstance();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		}
+		
 		if (id != null)
 			getIdField().getBinding().assignValueTo(entity, id);
 		return entity;
@@ -64,4 +73,21 @@ public class EntityMetadata<E> {
 		return idField;
 	}
 
+	public List<String> getFieldNames(){
+		List<String> res = new LinkedList<String>();
+		for (FieldMetadata metadata: fieldMetadataList){
+			if (metadata.isColumn())
+				res.add(metadata.getName());
+		}
+		return res;
+	}
+	
+	public List<String> getColumnNames(){
+		List<String> res = new LinkedList<String>();
+		for (FieldMetadata metadata: fieldMetadataList){
+			if (metadata.isColumn())
+				res.add(((ColumnFieldMetadata)metadata).getColumnName());
+		}
+		return res ;
+	}
 }

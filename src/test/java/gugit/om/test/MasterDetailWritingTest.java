@@ -23,11 +23,11 @@ public class MasterDetailWritingTest {
 		
 		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
 		
-		List<InsertData<?>> personInserts = batch.getInserts(Person.class);
+		List<InsertData<?>> personInserts = batch.getAllInserts(Person.class);
 		assertEquals(personInserts.size(), 1);
 		assertEquals(personInserts.get(0).get("NAME"), person.getName());
 		
-		List<InsertData<?>> addressInserts = batch.getInserts(Address.class);
+		List<InsertData<?>> addressInserts = batch.getAllInserts(Address.class);
 		assertNull(addressInserts);
 	}
 
@@ -38,7 +38,7 @@ public class MasterDetailWritingTest {
 		
 		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
 		
-		List<UpdateData<?>> updates = batch.getUpdates(Person.class);
+		List<UpdateData<?>> updates = batch.getAllUpdates(Person.class);
 		assertEquals(updates.size(), 1);
 		assertEquals(updates.get(0).get("NAME"), NullWriteValue.getInstance());
 		assertEquals(person.getId(), updates.get(0).get("ID"));
@@ -55,10 +55,10 @@ public class MasterDetailWritingTest {
 		
 		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
 		
-		List<InsertData<?>> personInserts = batch.getInserts(Person.class);
+		List<InsertData<?>> personInserts = batch.getAllInserts(Person.class);
 		assertEquals(personInserts.size(), 1);
 		
-		List<InsertData<?>> addressInserts = batch.getInserts(Address.class);
+		List<InsertData<?>> addressInserts = batch.getAllInserts(Address.class);
 		assertEquals(addressInserts.size(), 1);
 		assertEquals(address.getCountry(), addressInserts.get(0).get("COUNTRY"));
 		assertEquals(NullWriteValue.getInstance(), addressInserts.get(0).get("CITY"));
@@ -83,16 +83,16 @@ public class MasterDetailWritingTest {
 		
 		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
 		
-		assertEquals(batch.getInserts(Person.class).size(), 1); // 1 new person
-		assertEquals(batch.getInserts(Address.class).size(), 3); // 3 new addresses
-		assertEquals(batch.getInserts(Address.class).get(0).get("STREET"), address1.getStreet());
-		assertEquals(batch.getInserts(Address.class).get(2).get("STREET"), address4.getStreet());
+		assertEquals(batch.getAllInserts(Person.class).size(), 1); // 1 new person
+		assertEquals(batch.getAllInserts(Address.class).size(), 3); // 3 new addresses
+		assertEquals(batch.getAllInserts(Address.class).get(0).get("STREET"), address1.getStreet());
+		assertEquals(batch.getAllInserts(Address.class).get(2).get("STREET"), address4.getStreet());
 
-		assertNull(batch.getUpdates(Person.class)); // no existing person
+		assertNull(batch.getAllUpdates(Person.class)); // no existing person
 
-		assertEquals(batch.getUpdates(Address.class).size(), 1); // 1 existing address
-		assertEquals(batch.getUpdates(Address.class).get(0).get("ID"), address3.getId());
-		assertEquals(batch.getUpdates(Address.class).get(0).get("STREET"), address3.getStreet());
+		assertEquals(batch.getAllUpdates(Address.class).size(), 1); // 1 existing address
+		assertEquals(batch.getAllUpdates(Address.class).get(0).get("ID"), address3.getId());
+		assertEquals(batch.getAllUpdates(Address.class).get(0).get("STREET"), address3.getStreet());
 	}
 	
 	private static Address makeAddress(String street){

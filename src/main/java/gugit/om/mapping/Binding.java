@@ -7,7 +7,7 @@ import com.esotericsoftware.reflectasm.MethodAccess;
 
 
 /***
- * Knows how to set/get value on a specified property of any object
+ * Knows how to set/get value on a specified property of any object of that specific class
  * 
  * @author urbonman
  *

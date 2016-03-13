@@ -1,8 +1,6 @@
 package gugit.om.mapping;
 
-import gugit.om.WriteBatch;
-
-import java.util.Map;
+import gugit.om.WritePad;
 
 public class NoWriter implements IWriter{
 
@@ -15,7 +13,7 @@ public class NoWriter implements IWriter{
 	}
 	
 	@Override
-	public void write(Object value, Map<String, Object> props, WriteBatch writeBatch) {
+	public void write(Object value, WritePad<?> writePad) {
 		;
 	}
 

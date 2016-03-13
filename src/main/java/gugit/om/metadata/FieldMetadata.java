@@ -40,4 +40,8 @@ public class FieldMetadata {
 	public IReader getReader() {
 		return reader;
 	}
+
+	public boolean isColumn(){
+		return false; // to be overriden by subclasses
+	}
 }

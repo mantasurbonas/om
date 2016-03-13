@@ -1,8 +1,6 @@
 package gugit.om.mapping;
 
-import gugit.om.WriteBatch;
-
-import java.util.Map;
+import gugit.om.WritePad;
 
 public class PrimitiveWriter <E>implements IWriter{
 
@@ -13,10 +11,8 @@ public class PrimitiveWriter <E>implements IWriter{
 	}
 	
 	@Override
-	public void write(Object value, Map<String, Object> props, WriteBatch writeBatch) {
-		if (value == null)
-			value = NullWriteValue.getInstance();
-		props.put(columnName, value);
+	public void write(Object value, WritePad<?> where) {
+		where.add(columnName, value);
 	}
 
 }

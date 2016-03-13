@@ -10,17 +10,22 @@ import java.util.LinkedList;
 import java.util.List;
 
 
-
+/***
+ * facade for object reading and writing
+ * 
+ * @author urbonman
+ */
 public class OM <E>{
 	
 	private EntityReader<E> entityReader;
 	private EntityWriter<E> entityWriter;
+	private EntityMetadata<E> entityMetadata;
 	
 	public OM(Class<E> entityClass) {
-		EntityMetadata<E> metadata = new EntityMetadataFactory().createMetadata(entityClass);
+		entityMetadata = new EntityMetadataFactory().createMetadata(entityClass);
 	
-		entityWriter = new EntityWriter<E>(metadata);
-		entityReader = new EntityReader<E>(metadata);
+		entityWriter = new EntityWriter<E>(entityMetadata);
+		entityReader = new EntityReader<E>(entityMetadata);
 	}
 	
 	/***
@@ -31,7 +36,8 @@ public class OM <E>{
 	}
 
 	public void writeEntity(E entity, WriteBatch batch){
-		entityWriter.write(entity, null, batch);
+		WritePad<E> writePad = batch.createWritePad(entity, entityMetadata);
+		entityWriter.write(entity, writePad);
 	}
 	
 	public WriteBatch writeEntity(E entity){
@@ -46,7 +52,10 @@ public class OM <E>{
 	
 	public E readEntity(ArrayIterator<Object> array){
 		E res = entityReader.read(array);
-		assertAllDataWasRead(array);
+		
+		if (false) // TODO: parametrize this check
+			assertAllDataWasRead(array);
+		
 		return res;
 	}
 	

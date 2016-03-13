@@ -31,7 +31,7 @@ public class UpdateData<E> {
 		return metadata;
 	}
 
-	public void setMetadata(EntityMetadata<E> metadata) {
+	private void setMetadata(EntityMetadata<E> metadata) {
 		this.metadata = metadata;
 	}
 
@@ -39,7 +39,7 @@ public class UpdateData<E> {
 		return entity;
 	}
 
-	public void setEntity(E entity) {
+	private void setEntity(E entity) {
 		this.entity = entity;
 	}
 
@@ -51,7 +51,7 @@ public class UpdateData<E> {
 		return data;
 	}
 
-	public void setData(Map<String, Object> data) {
+	private void setData(Map<String, Object> data) {
 		this.data = data;
 	}
 }

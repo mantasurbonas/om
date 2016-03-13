@@ -23,7 +23,7 @@ public class SimpleEntityWritingTest {
 		
 		WriteBatch batch = new OM<Address>(Address.class).writeEntity(address);
 		
-		List<InsertData<?>> inserts = batch.getInserts(Address.class);
+		List<InsertData<?>> inserts = batch.getAllInserts(Address.class);
 		assertEquals(inserts.size(), 1);
 		assertEquals(inserts.get(0).get("CITY"), "Wellington");
 	}
@@ -38,10 +38,10 @@ public class SimpleEntityWritingTest {
 		
 		WriteBatch batch = new OM<Address>(Address.class).writeEntity(address);
 		
-		List<InsertData<?>> inserts = batch.getInserts(Address.class);
+		List<InsertData<?>> inserts = batch.getAllInserts(Address.class);
 		assertNull(inserts);
 		
-		List<UpdateData<?>> updates = batch.getUpdates(Address.class);
+		List<UpdateData<?>> updates = batch.getAllUpdates(Address.class);
 		assertEquals(updates.size(), 1);
 		assertEquals("Wellington", updates.get(0).get("CITY"));
 	}

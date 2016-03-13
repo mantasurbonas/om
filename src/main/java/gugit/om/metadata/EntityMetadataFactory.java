@@ -6,16 +6,14 @@ import gugit.om.mapping.Binding;
 import gugit.om.mapping.EntityCollectionWriter;
 import gugit.om.mapping.EntityReader;
 import gugit.om.mapping.EntityWriter;
-import gugit.om.mapping.IReader;
-import gugit.om.mapping.IWriter;
 import gugit.om.mapping.NoBinding;
 import gugit.om.mapping.NoReader;
 import gugit.om.mapping.NoWriter;
-import gugit.om.mapping.PrimitiveReader;
-import gugit.om.mapping.PrimitiveWriter;
 import gugit.om.utils.ArrayIterator;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.esotericsoftware.reflectasm.MethodAccess;
 
@@ -28,28 +26,28 @@ import com.esotericsoftware.reflectasm.MethodAccess;
  */
 public class EntityMetadataFactory{
 	
-	public <T> EntityMetadata<T> createMetadata(Class<T> entityClass){			
+	private Map<Class<?>, EntityMetadata<?>> metadataCache = new HashMap<Class<?>, EntityMetadata<?>>();
+	
+	@SuppressWarnings("unchecked")
+	public <T> EntityMetadata<T> createMetadata(Class<T> entityClass){
+		if (metadataCache.containsKey(entityClass))
+			return (EntityMetadata<T>) metadataCache.get(entityClass);
+		
 		ArrayIterator<Field> fields = new ArrayIterator<Field>(entityClass.getFields());
 
 		String entityName = resolveEntityName(entityClass);
 		FieldMetadata id = createIDMetadata( entityClass, findID(fields) );		
-		EntityMetadata<T> entityMetadata = new EntityMetadata<T>(entityClass, entityName, id);	
-			
-		addFieldMetadata(entityMetadata, fields);
+		EntityMetadata<T> entityMetadata = new EntityMetadata<T>(entityClass, entityName, id);
+		
+		metadataCache.put(entityClass, entityMetadata);
+		try{
+			addFieldMetadata(entityMetadata, fields);
+		}catch(Exception e){
+			metadataCache.remove(entityClass);
+			throw e;
+		}
 	
 		return entityMetadata;
-	}
-
-	private <T> FieldMetadata createIDMetadata(Class<T> entityClass, Field idField) {
-		String fieldName = idField.getName();
-		String columnName = resolveIdColumnName(idField);
-		
-		Binding binding = new Binding( MethodAccess.get(entityClass), fieldName, false );
-		
-		IWriter writer = new PrimitiveWriter<>(columnName);
-		IReader reader = new PrimitiveReader<>();
-		
-		return new FieldMetadata(fieldName, binding, writer, reader);
 	}
 
 	private <T> void addFieldMetadata(EntityMetadata<T> entityMetadata, ArrayIterator<Field> fields) {
@@ -131,13 +129,18 @@ public class EntityMetadataFactory{
 
 
 	private FieldMetadata createColumnMetadata(AnnotationHelper annotations, Field field, MethodAccess access) {
-		String name = field.getName();
-		return new FieldMetadata(name, 
-								new Binding(access, name, false), 
-								new PrimitiveWriter<>(annotations.getColumnName()), 
-								new PrimitiveReader<>());
+		return new ColumnFieldMetadata(field.getName(), 
+										annotations.getColumnName(), 
+										access);
 	}
 
+	private <T> FieldMetadata createIDMetadata(Class<T> entityClass, Field idField) {
+		return new ColumnFieldMetadata(idField.getName(), 
+										resolveIdColumnName(idField), 
+										MethodAccess.get(entityClass));
+	}
+
+	
 	private static Field findID(ArrayIterator<Field> fields){
 		while (! fields.isFinished()){
 			Field field = fields.getNext(); 

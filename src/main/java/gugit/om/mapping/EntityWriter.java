@@ -1,11 +1,8 @@
 package gugit.om.mapping;
 
-import gugit.om.WriteBatch;
+import gugit.om.WritePad;
 import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.FieldMetadata;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class EntityWriter <E> implements IWriter{
 	
@@ -15,22 +12,21 @@ public class EntityWriter <E> implements IWriter{
 		this.entityMetadata = metadata;
 	}
 	
-	public void write(Object entity, Map<String, Object> props, WriteBatch writeBatch){
+	public void write(Object entity, WritePad<?> where){
 		if (entity == null)
 			return;
 		
 		Object id = entityMetadata.getIdField().getBinding().retrieveValueFrom(entity);
 		
-		props = new HashMap<String, Object>();
+		@SuppressWarnings("unchecked")
+		WritePad<E> newPad = new WritePad<E>((E)entity, entityMetadata, where.getWriteBatch()); 
+		newPad.setIsInsert(id == null);
 		
 		for (FieldMetadata fieldMetadata: entityMetadata.getFieldMetadataList()){
 			Object fieldValue = fieldMetadata.getBinding().retrieveValueFrom(entity);
-			fieldMetadata.getWriter().write(fieldValue, props, writeBatch);
+			fieldMetadata.getWriter().write(fieldValue, newPad);
 		}
-		
-		if (id == null)
-			writeBatch.addInserts(entity, entityMetadata, props);
-		else
-			writeBatch.addUpdates(entity, entityMetadata, props);
+
+		newPad.finish();
 	}
 }
