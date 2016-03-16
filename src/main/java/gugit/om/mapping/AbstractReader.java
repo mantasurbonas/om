@@ -12,7 +12,7 @@ import java.util.Map;
  * 
  * @author urbonman
  */
-public abstract class AbstractReader{
+public abstract class AbstractReader implements IReader{
 
 	/***
 	 * readers that help read entities of other types, should we need it
@@ -91,5 +91,4 @@ public abstract class AbstractReader{
 		state.lastEntity = null;
 		state.lastId = null;
 	}	
-	
 }

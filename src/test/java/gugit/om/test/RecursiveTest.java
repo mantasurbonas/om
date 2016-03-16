@@ -7,10 +7,7 @@ import static org.junit.Assert.assertTrue;
 import gugit.om.InsertData;
 import gugit.om.OM;
 import gugit.om.WriteBatch;
-import gugit.om.annotations.Column;
-import gugit.om.annotations.DetailEntity;
-import gugit.om.annotations.Entity;
-import gugit.om.annotations.ID;
+import gugit.om.test.model.Recursive;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -19,47 +16,6 @@ import org.junit.Test;
 
 public class RecursiveTest {
 
-	@Entity(name="RECURSIVE")
-	public static class Recursive{
-		@ID(name="ID")
-		public Integer id;
-		
-		@Column(name="LABEL")
-		public String label;
-		
-		@DetailEntity(myProperty="id", detailColumn="PARENT_ID")
-		public Recursive recursive;
-
-		public Integer getId() {
-			return id;
-		}
-
-		public void setId(Integer id) {
-			this.id = id;
-		}
-
-		public String getLabel() {
-			return label;
-		}
-
-		public void setLabel(String label) {
-			this.label = label;
-		}
-
-		public Recursive getRecursive() {
-			return recursive;
-		}
-
-		public void setRecursive(Recursive recursive) {
-			this.recursive = recursive;
-		}
-		
-		public String toString(){
-			return "Recursive #"+getId()
-						+" '"+getLabel()+"' "
-						+getRecursive();
-		}
-	}
 	
 	@Test
 	public void testWritingRecursiveEntities() {

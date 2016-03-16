@@ -1,47 +1,32 @@
 package gugit.om.metadata;
 
-import gugit.om.mapping.Binding;
-import gugit.om.mapping.IReader;
-import gugit.om.mapping.IWriter;
 
 public class FieldMetadata {
 
 	// a name of a POJO field - just as specified by the developer
 	private String name;
-	
-	// helper used to access value of a POJO field
-	private Binding accessor;
-	
-	// a writer used to persist this field's value
-	private IWriter writer;
 
-	// a reader used to read value for this field
-	private IReader reader;
+	// a label used when persisting
+	private String columnName;
+		
+	// field position relative to ID field, which is at position zero
+	private int columnOffset;
 	
-	public FieldMetadata(final String name, Binding binding, IWriter writer, IReader reader){
+	public FieldMetadata(final String name, final String columnName, int columnOffset){
 		this.name = name;
-		this.accessor = binding;
-		this.writer = writer;
-		this.reader = reader;				
+		this.columnName = columnName;
+		this.columnOffset = columnOffset;
 	}
-	
-	public Binding getBinding() {
-		return accessor;
-	}
-
-	public IWriter getWriter() {
-		return writer;
-	}
-	
+		
 	public String getName(){
 		return name;
 	}
 
-	public IReader getReader() {
-		return reader;
+	public String getColumnName() {
+		return columnName;
 	}
 
-	public boolean isColumn(){
-		return false; // to be overriden by subclasses
+	public int getColumnOffset() {
+		return columnOffset;
 	}
 }

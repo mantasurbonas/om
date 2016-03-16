@@ -1,6 +1,6 @@
 package gugit.om.mapping;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 public class ReadContext {
 	
@@ -18,24 +18,32 @@ public class ReadContext {
 		}
 	};
 	
-	private LinkedList<StackEntry> stack = new LinkedList<StackEntry>();
-	private LinkedList<StackEntry> recycle = new LinkedList<StackEntry>();
+	private ArrayList<StackEntry> stack = new ArrayList<StackEntry>(50);
+	private int stackSize = 0;
 	
 	public void entityIsBeingRead(Object entity, Object id){
-		StackEntry entry = recycle.isEmpty()?new StackEntry(entity, id):recycle.removeLast().assign(entity, id);
-		stack.add(entry);
+		stackSize ++;
+		if (stackSize > stack.size())
+			stack.add(new StackEntry(entity, id));
+		else
+			stack.get(stackSize-1).assign(entity, id);
 	}
 	
 	public void entityReadingFinished(){
-		recycle.addLast(stack.removeLast());
+		stackSize --;
 	}
 	
 	public Object findEntity(Class<?> type, Object id){
-		for (StackEntry e:stack){		
+		for (int i=0; i<stackSize; i++){
+			StackEntry e = stack.get(i);
 			if (type.isInstance(e.entity))
 				if (e.id.equals(id))
 					return e.entity;
 		}
 		return null;
+	}
+	
+	public void clear(){
+		stackSize = 0;
 	}
 }

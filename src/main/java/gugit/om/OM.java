@@ -1,7 +1,8 @@
 package gugit.om;
 
-import gugit.om.mapping.EntityReader;
+import gugit.om.mapping.AbstractReader;
 import gugit.om.mapping.EntityWriter;
+import gugit.om.mapping.ReadContext;
 import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.EntityMetadataFactory;
 import gugit.om.utils.ArrayIterator;
@@ -17,15 +18,19 @@ import java.util.List;
  */
 public class OM <E>{
 	
-	private EntityReader<E> entityReader;
+	private AbstractReader entityReader;
 	private EntityWriter<E> entityWriter;
 	private EntityMetadata<E> entityMetadata;
+	private ReadContext readContext;
 	
 	public OM(Class<E> entityClass) {
-		entityMetadata = new EntityMetadataFactory().createMetadata(entityClass);
+		EntityMetadataFactory metadataFactory = new EntityMetadataFactory();
+		entityMetadata = metadataFactory.getMetadataFor(entityClass);
 	
 		entityWriter = new EntityWriter<E>(entityMetadata);
-		entityReader = new EntityReader<E>(entityMetadata);
+		entityReader = metadataFactory.getEntityReader(entityMetadata);
+		
+		readContext = new ReadContext();
 	}
 	
 	/***
@@ -33,6 +38,7 @@ public class OM <E>{
 	 */
 	public void reset(){
 		entityReader.reset();
+		readContext.clear();
 	}
 
 	public void writeEntity(E entity, WriteBatch batch){
@@ -50,13 +56,9 @@ public class OM <E>{
 		return readEntity(new ArrayIterator<Object>(array));
 	}
 	
+	@SuppressWarnings("unchecked")
 	public E readEntity(ArrayIterator<Object> array){
-		E res = entityReader.read(array);
-		
-		if (false) // TODO: parametrize this check
-			assertAllDataWasRead(array);
-		
-		return res;
+		return (E)entityReader.read(array, 0, readContext);
 	}
 	
 	public LinkedList<E> readEntities(List<Object []> dataRows){
@@ -79,9 +81,4 @@ public class OM <E>{
 		return result;
 	}
 
-	private void assertAllDataWasRead(ArrayIterator<Object> row) {
-		if (!row.isFinished())
-			throw new RuntimeException("row mapping should be completely finished but only "+row.offset+"/"+row.length()+" fields mapped.");
-	}
-	
 }

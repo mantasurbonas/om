@@ -2,17 +2,15 @@ package gugit.om.metadata;
 
 import gugit.om.annotations.Entity;
 import gugit.om.annotations.ID;
-import gugit.om.mapping.Binding;
-import gugit.om.mapping.EntityCollectionWriter;
-import gugit.om.mapping.EntityReader;
-import gugit.om.mapping.EntityWriter;
+import gugit.om.mapping.AbstractReader;
+import gugit.om.mapping.ReaderCompiler;
 import gugit.om.utils.ArrayIterator;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.esotericsoftware.reflectasm.MethodAccess;
+import sun.reflect.ReflectionFactory.GetReflectionFactoryAction;
 
 
 /***
@@ -25,30 +23,47 @@ public class EntityMetadataFactory{
 	
 	private Map<Class<?>, EntityMetadata<?>> metadataCache = new HashMap<Class<?>, EntityMetadata<?>>();
 	
+	private Map<Class<?>, AbstractReader> readersCache = new HashMap<Class<?>, AbstractReader>();
+	
+	private ReaderCompiler readerCompiler = new ReaderCompiler();
+	
+	
 	@SuppressWarnings("unchecked")
-	public <T> EntityMetadata<T> createMetadata(Class<T> entityClass){
+	public <T> EntityMetadata<T> getMetadataFor(Class<T> entityClass){
+		
 		if (metadataCache.containsKey(entityClass))
 			return (EntityMetadata<T>) metadataCache.get(entityClass);
 		
 		ArrayIterator<Field> fields = new ArrayIterator<Field>(entityClass.getFields());
 
-		String entityName = resolveEntityName(entityClass);
-		FieldMetadata id = createIDMetadata( entityClass, findID(fields) );		
-		EntityMetadata<T> entityMetadata = new EntityMetadata<T>(entityClass, entityName, id);
-		
+		EntityMetadata<T> entityMetadata = createMetadata(entityClass, fields);	
 		metadataCache.put(entityClass, entityMetadata);
+		
 		try{
-			addFieldMetadata(entityMetadata, fields);
+			addFieldsToMetadata(entityMetadata, fields);
 		}catch(Exception e){
 			metadataCache.remove(entityClass);
 			throw e;
 		}
 	
+		this.getEntityReader(entityMetadata);
+		
 		return entityMetadata;
 	}
 
-	private <T> void addFieldMetadata(EntityMetadata<T> entityMetadata, ArrayIterator<Field> fields) {
-		MethodAccess access = MethodAccess.get(entityMetadata.getEntityClass());	
+	private <T> EntityMetadata<T> createMetadata(Class<T> entityClass, ArrayIterator<Field> fields) {
+		Field idField = findID(fields);
+		FieldMetadata idMetadata = createIDMetadata( entityClass, idField, fields.getPosition() );		
+		fields.next();
+
+		return new EntityMetadata<T>(entityClass, 
+									determineEntityName(entityClass), 
+									idMetadata);
+	}
+
+	private <T> void addFieldsToMetadata(EntityMetadata<T> entityMetadata, ArrayIterator<Field> fields) {
+		
+		Integer columnOffset = fields.getPosition();
 		
 		while (!fields.isFinished()){
 			Field field = fields.getNext();
@@ -57,34 +72,45 @@ public class EntityMetadataFactory{
 			if (annotations.isID())
 				throw new RuntimeException("ID field must be one and only one");
 			
-			if (annotations.isIgnored())
-				entityMetadata.addFieldMetadata(IgnoreFieldMetadata.getInstance());
+			if (annotations.isIgnored()){
+				entityMetadata.addPrimitiveField(new IgnoreFieldMetadata(columnOffset));
+				columnOffset += 1;
+			}
 			else
 			if (annotations.isTransient())
-				entityMetadata.addFieldMetadata(TransientFieldMetadata.getInstance());
+				; // just skipping transient fields
 			else
-			if (annotations.isColumn())
-				entityMetadata.addFieldMetadata( createColumnMetadata(annotations, field, access) );
-			else
-			if (annotations.isDetailEntity())
-				entityMetadata.addFieldMetadata( createDetailMetadata( annotations, field, access ) );
-			else
-			if (annotations.isDetailEntities())
-				entityMetadata.addFieldMetadata( createDetailCollectionMetadata ( annotations, field, access ) );
-			else
+			if (annotations.isColumn()){
+				entityMetadata.addPrimitiveField(new FieldMetadata(field.getName(), annotations.getColumnName(), columnOffset));
+				columnOffset += 1;
+			}else
 			if (annotations.isMasterEntity()){
-				entityMetadata.addFieldMetadata( createMasterMetadata( annotations, field, access, entityMetadata ) );
+				entityMetadata.addMasterRefField( new FieldMetadata(field.getName(), annotations.getMasterMyColumnName(), columnOffset));
+				columnOffset += 1;
+			}else
+			if (annotations.isDetailEntity()){
+				FieldMetadata fieldMeta = new FieldMetadata(field.getName(), "-=nevermind=-", columnOffset);
+				entityMetadata.addPojoField( fieldMeta );
 				
-				/*Binding fieldAccessor = new Binding(access, field);
+				EntityMetadata<?> pojoMetadata = getMetadataFor(field.getType());
+				Integer width = pojoMetadata.getWidth();
+				if (width == null)
+					columnOffset = null;
+				else
+					columnOffset += width;
+			}
+			else
+			if (annotations.isDetailEntities()){
+				Class<?> detailClass = annotations.getDetailEntitiesType();
+				entityMetadata.addPojoCollectionField( new DetailCollectionFieldMetadata(field.getName(), detailClass, columnOffset));
 				
-				Class<?> masterEntityType = field.getType();
-				MethodAccess masterAccess = MethodAccess.get(masterEntityType);
-				String masterPropertyName = annotations.getMasterPropertyName();
-				Binding masterPropertyAccessor = new Binding(masterAccess, masterPropertyName);
+				EntityMetadata<?> pojoMetadata = getMetadataFor(detailClass);
 				
-				String myColumnName = annotations.getMasterMyColumnName();
-				entityMetadata.addFieldMapping(new OLD__MasterEntityFieldMapping(myColumnName, fieldAccessor, masterPropertyAccessor));
-				*/
+				Integer width = pojoMetadata.getWidth();
+				if (width == null)
+					columnOffset = null;
+				else
+					columnOffset += width;
 			}/*else
 			if (annotations.isManyToMany()){
 				Class<?> fieldEntityType = annotations.getManyToManyFieldType();
@@ -94,76 +120,61 @@ public class EntityMetadataFactory{
 			else
 				throw new RuntimeException("could not recognize annotation");
 		}
-	}
-	
-	private FieldMetadata createMasterMetadata(AnnotationHelper annotations, Field field, MethodAccess access, EntityMetadata<?> entityMetadata) {
-		String fieldName = field.getName();
-		Binding fieldAccessor = new Binding(access, fieldName, false);
 		
-		Class<?> masterEntityType = field.getType();
-		MethodAccess masterFieldAccess = MethodAccess.get(masterEntityType);
-		String masterPropertyName = annotations.getMasterPropertyName();
-		
-		Binding masterFieldAccessor = new Binding(masterFieldAccess, masterPropertyName, false);
-		
-		String myColumnName = annotations.getMasterMyColumnName();
-
-		WriteTimeDependency dependency = new WriteTimeDependency(fieldAccessor, masterFieldAccessor, myColumnName);
-		
-		return new FieldMetadata(fieldName,
-								fieldAccessor, 
-								new DependencyWriter(dependency), 
-								new MasterDependencyReader(masterEntityType)); // TODO - master reader
+		entityMetadata.setWidth(columnOffset);
 	}
 
-	private FieldMetadata createDetailCollectionMetadata(AnnotationHelper annotations, Field field, MethodAccess access) {
-		String name = field.getName();
-		Class<?> detailClass = annotations.getDetailEntitiesType();
-		EntityMetadata<?> detailEntityMetadata = createMetadata(detailClass);
+	public AbstractReader getEntityReader(EntityMetadata<?> entityMetadata){
+		Class<?> entityClass = entityMetadata.getEntityClass();
 		
-		return new FieldMetadata(name, 
-								new Binding(access, name, true), 
-								new EntityCollectionWriter<>(detailEntityMetadata), 
-								new EntityReader<>(detailEntityMetadata));
+		if (readersCache.containsKey(entityClass))
+			return readersCache.get(entityClass);
+		
+		AbstractReader reader;
+		try {
+			reader = makeReader(entityMetadata);
+			readersCache.put(entityClass, reader);			
+			return reader;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	private FieldMetadata createDetailMetadata(AnnotationHelper annotations, Field field, MethodAccess access) {
-		String name = field.getName();
-		Class<?> fieldType = field.getType();
-		EntityMetadata<?> detailEntityMetadata = createMetadata(fieldType);
-		return new FieldMetadata(name ,
-								new Binding(access, name, false),
-								new EntityWriter<>(detailEntityMetadata),
-								new EntityReader<>(detailEntityMetadata));
+	private AbstractReader makeReader(EntityMetadata<?> entityMetadata) throws Exception {
+		Class<AbstractReader> readerClass;
+		Class<?> entityClass = entityMetadata.getEntityClass();
+		if (readerCompiler.doesReaderClassExist(entityClass)) {
+			readerClass = readerCompiler.getExistingReaderClass(entityClass);
+		}else{		
+			readerClass = readerCompiler.makeReaderClass(entityMetadata);
+		}
+		
+		AbstractReader reader = readerClass.newInstance();
+		reader.setReaders(readersCache);
+		
+		return reader;
 	}
 
-
-	private FieldMetadata createColumnMetadata(AnnotationHelper annotations, Field field, MethodAccess access) {
-		return new ColumnFieldMetadata(field.getName(), 
-										annotations.getColumnName(), 
-										access);
-	}
-
-	private <T> FieldMetadata createIDMetadata(Class<T> entityClass, Field idField) {
-		return new ColumnFieldMetadata(idField.getName(), 
-										resolveIdColumnName(idField), 
-										MethodAccess.get(entityClass));
+	private <T> FieldMetadata createIDMetadata(Class<T> entityClass, Field idField, int position) {
+		return new FieldMetadata(idField.getName(), 
+								resolveIdColumnName(idField), 
+								position);
 	}
 
 	
 	private static Field findID(ArrayIterator<Field> fields){
 		while (! fields.isFinished()){
-			Field field = fields.getNext(); 
+			Field field = fields.peek(); 
 			
 			AnnotationHelper annotation = new AnnotationHelper(field.getAnnotations());
 			
-			if (annotation.isTransient())
-				continue;
-			
 			if (annotation.isID())
 				return field;
+						
+			if (!annotation.isTransient())	
+				throw new RuntimeException("ID field must be a first non-transient field in the entity");
 			
-			throw new RuntimeException("ID field must be a first non-transient field in the entity");
+			fields.next();
 		}
 		throw new RuntimeException("ID field not found in the entity");
 	}
@@ -173,7 +184,7 @@ public class EntityMetadataFactory{
 		return annotations[0].name();
 	}
 
-	private static String resolveEntityName(Class<?> clazz) {
+	private static String determineEntityName(Class<?> clazz) {
 		Entity annotation = clazz.getAnnotation(Entity.class);
 		
 		if (annotation == null || annotation.name() == null || annotation.name().trim().isEmpty())

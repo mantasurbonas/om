@@ -1,5 +1,8 @@
 package gugit.om.mapping;
 
+import gugit.om.metadata.DetailCollectionFieldMetadata;
+import gugit.om.metadata.EntityMetadata;
+import gugit.om.metadata.FieldMetadata;
 import gugit.om.utils.StringTemplate;
 
 import java.util.List;
@@ -22,7 +25,7 @@ public class ReaderCompiler {
 			+ "   if (row.isOutOfBounds(position)) \n"
 			+ "       return null; \n"
 			
-			+ "   gugit.research.AbstractReader.State state = getState(position); \n"
+			+ "   gugit.om.mapping.AbstractReader.State state = getState(position); \n"
 			+ "   Object id = row.peek( position + %ID_COL_OFFSET% ); \n"
 			
 			+ "   if (id == null){  \n"
@@ -103,25 +106,11 @@ public class ReaderCompiler {
 	// TODO: refactor to parameter
 	private CtClass ctEntityClass;
 	
-	public static class FieldInfo{
-		public int columnOffset;
-		public String capitalizedName;
-		public Class<?> fieldType;
-		
-		public FieldInfo(int colOffset, String capitalizedFieldName){
-			this(colOffset, capitalizedFieldName, null);
-		}
-		public FieldInfo(int colOffset, String capitalizedFieldName, Class<?> fieldType){
-			this.columnOffset=colOffset;
-			this.capitalizedName=capitalizedFieldName;
-			this.fieldType=fieldType;
-		}
-	};
 
-
-	public ReaderCompiler(Class<?> entityClass){		
+	public ReaderCompiler(){		
 		this.pool = ClassPool.getDefault();
-		this.pool.importPackage("gugit.research");
+		this.pool.importPackage("gugit.om.mapping");
+		this.pool.importPackage("gugit.om.utils");
 	}
 
 	public boolean doesReaderClassExist(Class<?> entityClass) {
@@ -133,28 +122,37 @@ public class ReaderCompiler {
 		return (Class<AbstractReader>) Class.forName(getGeneratedClassName(entityClass.getCanonicalName()));
 	}
 
+	public Class<AbstractReader> makeReaderClass(EntityMetadata<?> entityMetadata) throws Exception {
+		return makeReaderClass(entityMetadata.getEntityClass(), 
+								entityMetadata.getIdField(), 
+								entityMetadata.getPrimitiveFields(), 
+								entityMetadata.getPojoFields(), 
+								entityMetadata.getPojoCollectionFields(), 
+								entityMetadata.getMasterRefFields() );
+	}
+	
 	@SuppressWarnings("unchecked")
 	public Class<AbstractReader> makeReaderClass(Class<?> entityClass,
-												FieldInfo idField, 
-												List<FieldInfo> primitiveFields, 
-												List<FieldInfo> pojoFields, 
-												List<FieldInfo> pojoCollectionFields,
-												List<FieldInfo> masterReferenceFields) throws Exception {
+												FieldMetadata idField, 
+												List<FieldMetadata> primitiveFields, 
+												List<FieldMetadata> pojoFields, 
+												List<DetailCollectionFieldMetadata> pojoCollectionFields,
+												List<FieldMetadata> masterReferenceFields) throws Exception {
 
 		String entityClassName = entityClass.getCanonicalName();
 		
 		CtClass resultClass = pool.makeClass(getGeneratedClassName(entityClassName));		
-		resultClass.setSuperclass( pool.get("gugit.research.AbstractReader") );
+		resultClass.setSuperclass( pool.get("gugit.om.mapping.AbstractReader") );
 		
 		this.ctEntityClass = pool.get(entityClassName);
 
 		boolean needsReadContext = pojoFields.size()+pojoCollectionFields.size() > 0;
 		
 		String methodSrc = new StringTemplate(READ_METHOD_TEMPLATE)
-									.replace("ID_COL_OFFSET", ""+idField.columnOffset)
+									.replace("ID_COL_OFFSET", ""+idField.getColumnOffset())
 									.replace("ENTITY_CLASS_NAME", entityClassName)
-									.replace("ID_SETTER_METHOD", idField.capitalizedName)
-									.replace("ID_TYPE", getSetterParamType("set"+idField.capitalizedName))
+									.replace("ID_SETTER_METHOD", capitalize(idField.getName()))
+									.replace("ID_TYPE", getSetterParamType("set"+capitalize(idField.getName())))
 									.replace("FIELDS_MAPPING_SNIPPLET", createFieldsMappingSrc(primitiveFields, pojoFields))
 									.replace("DETAILS_COLLECTION_MAPPING_SNIPPLET", createDetailsCollectionMappingSrc(pojoCollectionFields))
 									.replace("MASTER_SETTING_SNIPPLET", createMasterSettingSnipplet(masterReferenceFields))
@@ -171,67 +169,71 @@ public class ReaderCompiler {
 		return resultClass.toClass();
 	}
 	
-	private String createFieldsMappingSrc(List<FieldInfo> simpleFieldSetters, List<FieldInfo> details)throws Exception {
+	private String capitalize(String name) {
+		return name.substring(0,1).toUpperCase()+name.substring(1);
+	}
+
+	private String createFieldsMappingSrc(List<FieldMetadata> simpleFieldSetters, List<FieldMetadata> details)throws Exception {
 		
 		StringBuilder src = new StringBuilder();
 		
-		for (FieldInfo field: simpleFieldSetters)
+		for (FieldMetadata field: simpleFieldSetters)
 			src.append(createSimpleFieldSetterSrc(field));
 
-		for (FieldInfo field: details)
+		for (FieldMetadata field: details)
 			src.append(createOneToOneDetailsSrc(field));
 		
 		return src.toString();
 	}
 	
-	private String createDetailsCollectionMappingSrc(List<FieldInfo> detailCollections){
+	private String createDetailsCollectionMappingSrc(List<DetailCollectionFieldMetadata> detailCollections){
 		StringBuilder src = new StringBuilder();
 		
-		for (FieldInfo field: detailCollections)
+		for (DetailCollectionFieldMetadata field: detailCollections)
 			src.append(createAddDetailSnipplet(field));
 		
 		return src.toString();
 	}
 
 
-	private String createMasterSettingSnipplet(List<FieldInfo> masterFields) throws NotFoundException{
+	private String createMasterSettingSnipplet(List<FieldMetadata> masterFields) throws NotFoundException{
 		StringBuilder src = new StringBuilder();
 		
-		for (FieldInfo field: masterFields)
+		for (FieldMetadata field: masterFields)
 			src.append(createMasterFieldSrc(field));
 		
 		return src.toString();
 	}
 	
-	private String createMasterFieldSrc(FieldInfo field) throws NotFoundException {
+	private String createMasterFieldSrc(FieldMetadata field) throws NotFoundException {
 		return new StringTemplate(SET_MASTER_SNIPPLET_TEMPLATE)
-							.replace("COL_OFFSET", ""+field.columnOffset)
-							.replace("MASTER_TYPE", getSetterParamType("set"+field.capitalizedName))
-							.replace("MASTER_FIELD", field.capitalizedName)
+							.replace("COL_OFFSET", ""+field.getColumnOffset())
+							.replace("MASTER_TYPE", getSetterParamType("set"+capitalize(field.getName())))
+							.replace("MASTER_FIELD", capitalize(field.getName()))
 							.getResult();
 	}
 
-	private String createSimpleFieldSetterSrc(FieldInfo fieldInfo) throws NotFoundException {		
+	private String createSimpleFieldSetterSrc(FieldMetadata fieldInfo) throws NotFoundException {		
 		return new StringTemplate(SIMPLE_FIELD_MAPPING_SNIPPLET_TEMPLATE)
-							.replace("FIELD_NAME", fieldInfo.capitalizedName)
-							.replace("FIELD_TYPE", getSetterParamType("set"+fieldInfo.capitalizedName) )
-							.replace("FIELD_COL_OFFSET", ""+fieldInfo.columnOffset)
+							.replace("FIELD_NAME", capitalize(fieldInfo.getName()))
+							.replace("FIELD_TYPE", getSetterParamType("set"+capitalize(fieldInfo.getName())) )
+							.replace("FIELD_COL_OFFSET", ""+fieldInfo.getColumnOffset())
 							.getResult();
 	}
 
-	private String createOneToOneDetailsSrc(FieldInfo fieldInfo) throws NotFoundException {
+	private String createOneToOneDetailsSrc(FieldMetadata fieldInfo) throws NotFoundException {
 		return new StringTemplate(POJO_FIELD_MAPPING_SNIPPLET_TEMPLATE)
-							.replace("FIELD_NAME", fieldInfo.capitalizedName)
-							.replace("DETAIL_TYPE", getSetterParamType("set"+fieldInfo.capitalizedName ) )
-							.replace("POJO_START_OFFSET", ""+fieldInfo.columnOffset)
+							.replace("FIELD_NAME", capitalize(fieldInfo.getName()))
+							.replace("DETAIL_TYPE", getSetterParamType("set"+capitalize(fieldInfo.getName()) ) )
+							.replace("POJO_START_OFFSET", ""+fieldInfo.getColumnOffset())
 							.getResult();
 	}
 
-	private String createAddDetailSnipplet(FieldInfo fieldInfo) {
+	private String createAddDetailSnipplet(DetailCollectionFieldMetadata fieldInfo) {
 		return new StringTemplate(ADD_DETAIL_TO_COLLECTION_SNIPPLET_TEMPLATE)
-							.replace("FIELD_NAME", fieldInfo.capitalizedName)
-							.replace("DETAIL_TYPE", fieldInfo.fieldType.getCanonicalName())
-							.replace("POJO_START_OFFSET", ""+fieldInfo.columnOffset)
+							.replace("FIELD_NAME", capitalize(fieldInfo.getName()))
+							.replace("DETAIL_TYPE", fieldInfo.getDetailType().getCanonicalName())
+							.replace("POJO_START_OFFSET", ""+fieldInfo.getColumnOffset())
 							.getResult();
 	}
 	

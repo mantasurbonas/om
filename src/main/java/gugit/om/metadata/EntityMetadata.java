@@ -1,9 +1,6 @@
 package gugit.om.metadata;
 
 import java.util.LinkedList;
-import java.util.List;
-
-import com.esotericsoftware.reflectasm.ConstructorAccess;
 
 /***
  * a holder for arbitrary information on a particular object (provided it is annotated with gugit::OM annotations)
@@ -14,51 +11,34 @@ public class EntityMetadata<E> {
 
 	// a class of an entity
 	private Class<E> entityClass;
-	
-	// for creating entity instances
-	private ConstructorAccess<E> constructor;
 
-	// the user-provided entity name, if different from its class name
+	// the user-provided entity name, if different from its class name (for persisting)
 	private String entityName;
-	
-	// annotations on the fields
-	private LinkedList<FieldMetadata> fieldMetadataList = new LinkedList<FieldMetadata>();
-	
+		
 	// one special annotation - for ID field, specifically
 	private FieldMetadata idField;
 
+	// how many recordset column does this entity occupy.
+	// (NULL if it is impossible to determine precisely - i.e. if subentities contain endless recursions) 
+	private Integer width = null;
+	
+	// the "simple" columns like date, string or integers
+	private LinkedList<FieldMetadata> primitiveFields = new LinkedList<FieldMetadata>();
+	
+	// the 1-to-1 (master to detail) relationships 
+	private LinkedList<FieldMetadata> pojoFields = new LinkedList<FieldMetadata>();
+	
+	// the 1-to-many (master to collection of details) relationships
+	private LinkedList<DetailCollectionFieldMetadata> pojoCollectionFields = new LinkedList<DetailCollectionFieldMetadata>();
+	
+	// references to parent (master) entities, if any
+	private LinkedList<FieldMetadata> masterRefFields = new LinkedList<FieldMetadata>();
+
 
 	public EntityMetadata(Class<E> entityClass, final String entityName, FieldMetadata idField) {
-		this.constructor = ConstructorAccess.get(entityClass);
 		this.entityClass = entityClass;
-		this.entityName = entityName;
-		
+		this.entityName = entityName;		
 		this.idField = idField;
-		this.addFieldMetadata(idField);
-	}
-	
-	public void addFieldMetadata(FieldMetadata fieldMetadata) {
-		this.fieldMetadataList.add(fieldMetadata);
-	}
-	
-	public List<FieldMetadata> getFieldMetadataList() {
-		return fieldMetadataList;
-	}
-	
-	public E createEntity(Object id){
-		E entity;
-		try {
-			entity = //entityClass.newInstance();
-					constructor.newInstance();
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
-		
-		if (id != null)
-			getIdField().getBinding().assignValueTo(entity, id);
-		return entity;
 	}
 	
 	public Class<E> getEntityClass() {
@@ -73,21 +53,48 @@ public class EntityMetadata<E> {
 		return idField;
 	}
 
-	public List<String> getFieldNames(){
-		List<String> res = new LinkedList<String>();
-		for (FieldMetadata metadata: fieldMetadataList){
-			if (metadata.isColumn())
-				res.add(metadata.getName());
-		}
-		return res;
+	public void setWidth(Integer columnCount) {
+		this.width = columnCount;
 	}
 	
-	public List<String> getColumnNames(){
-		List<String> res = new LinkedList<String>();
-		for (FieldMetadata metadata: fieldMetadataList){
-			if (metadata.isColumn())
-				res.add(((ColumnFieldMetadata)metadata).getColumnName());
-		}
-		return res ;
+	public Integer getWidth(){
+		return width;
 	}
+
+	public LinkedList<FieldMetadata> getPrimitiveFields() {
+		return primitiveFields;
+	}
+
+	public void setPrimitiveFields(LinkedList<FieldMetadata> primitiveFields) {
+		this.primitiveFields = primitiveFields;
+	}
+
+	public LinkedList<FieldMetadata> getPojoFields() {
+		return pojoFields;
+	}
+
+	public LinkedList<DetailCollectionFieldMetadata> getPojoCollectionFields() {
+		return pojoCollectionFields;
+	}
+
+	public LinkedList<FieldMetadata> getMasterRefFields() {
+		return masterRefFields;
+	}
+
+	public void addPrimitiveField(FieldMetadata fieldMetadata){
+		primitiveFields.add(fieldMetadata);
+	}
+	
+	public void addPojoField(FieldMetadata fieldMetadata){
+		pojoFields.add(fieldMetadata);
+	}
+	
+	public void addPojoCollectionField(DetailCollectionFieldMetadata field){
+		pojoCollectionFields.add(field);
+	}
+	
+	public void addMasterRefField(FieldMetadata field){
+		masterRefFields.add(field);
+	}
+	
 }

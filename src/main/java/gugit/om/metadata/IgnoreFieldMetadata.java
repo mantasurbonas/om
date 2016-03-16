@@ -1,23 +1,16 @@
 package gugit.om.metadata;
 
-import gugit.om.mapping.NoBinding;
-import gugit.om.mapping.NoWriter;
-import gugit.om.mapping.SkipReader;
-
-
+/***
+ * Defines a field that exists in the resultset 
+ * 	but which holds no business information.
+ * 
+ * Thus it must be skipped on reading and should not be persisted back to storage. 
+ * 
+ * @author urbonman
+ */
 public class IgnoreFieldMetadata extends FieldMetadata {
-
-	private static IgnoreFieldMetadata instance = new IgnoreFieldMetadata();
 	
-	private IgnoreFieldMetadata() {
-		super("<ignored>", 
-				NoBinding.getInstance(), 
-				NoWriter.getInstance(), 
-				SkipReader.getInstance());
+	public IgnoreFieldMetadata(int offset) {
+		super("-=<ignored>=-", "-=<ignored>=-", offset);
 	}
-	
-	public static IgnoreFieldMetadata getInstance(){
-		return instance;
-	}
-
 }

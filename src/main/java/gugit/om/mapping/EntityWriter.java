@@ -15,7 +15,7 @@ public class EntityWriter <E> implements IWriter{
 	public void write(Object entity, WritePad<?> where){
 		if (entity == null)
 			return;
-		
+		/*
 		Object id = entityMetadata.getIdField().getBinding().retrieveValueFrom(entity);
 		
 		@SuppressWarnings("unchecked")
@@ -28,5 +28,6 @@ public class EntityWriter <E> implements IWriter{
 		}
 
 		newPad.finish();
+		*/
 	}
 }

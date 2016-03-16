@@ -4,5 +4,6 @@ import gugit.om.utils.ArrayIterator;
 
 public interface IReader {
 
-	public Object read(ArrayIterator<Object> iterator, ReadContext context);
+	@SuppressWarnings("rawtypes")
+	public Object read(ArrayIterator iterator, int position, ReadContext context);
 }
