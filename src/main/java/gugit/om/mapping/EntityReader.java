@@ -45,56 +45,70 @@ public class EntityReader <E> implements IReader{
 		}
 		return state;
 	}
-	
+
 	public E read(ArrayIterator<Object> iterator){
+		ReadContext context = new ReadContext();
+		return read(iterator, context);
+	}
+	
+	public E read(ArrayIterator<Object> iterator, ReadContext context){
 		if (iterator.isFinished())
 			return null;
 		
 		Object id = iterator.peek();
 		
 		if (id == null)
-			return skipReading(iterator);
+			return skipReading(iterator, context);
 		else
 		if (id.equals( currentState(iterator).cachedId ) )
-			return (E)readCachedEntity(iterator);
+			return (E)readCachedEntity(iterator, context);
 		else
-			return (E)readNewEntity(id, iterator);
+			return (E)readNewEntity(id, iterator, context);
 	}
 	
-	private E readCachedEntity(ArrayIterator<Object> iterator){
+	private E readCachedEntity(ArrayIterator<Object> iterator, ReadContext context){
 		E cachedEntity = currentState(iterator).cachedEntity;
+		Object id = currentState(iterator).cachedId;
+		
+		context.entityIsBeingRead(cachedEntity, id);
 		
 		for (FieldMetadata fieldMetadata: entityMetadata.getFieldMetadataList()){
 			
-			Object value = fieldMetadata.getReader().read(iterator);
+			Object value = fieldMetadata.getReader().read(iterator, context);
 			
 			if (fieldMetadata.getBinding().isCollection())
 				fieldMetadata.getBinding().assignValueTo(cachedEntity, value);
 		}
 		
+		context.entityReadingFinished();
+		
 		return cachedEntity;
 	}
 	
-	private E readNewEntity(Object newId, ArrayIterator<Object> iterator){
+	private E readNewEntity(Object newId, ArrayIterator<Object> iterator, ReadContext context){
 		E entity = entityMetadata.createEntity(newId);
 		
 		currentState(iterator).cachedEntity = entity;
 		currentState(iterator).cachedId = newId;
 		
+		context.entityIsBeingRead(entity, newId);
+		
 		for (FieldMetadata fieldMetadata: entityMetadata.getFieldMetadataList()){
-			Object value = fieldMetadata.getReader().read(iterator);
+			Object value = fieldMetadata.getReader().read(iterator, context);
 			fieldMetadata.getBinding().assignValueTo(entity, value);
 		}
+		
+		context.entityReadingFinished();
 		
 		return entity;
 	}
 	
-	private E skipReading(ArrayIterator<Object> iterator){
+	private E skipReading(ArrayIterator<Object> iterator, ReadContext context){
 		currentState(iterator).cachedEntity = null;
 		currentState(iterator).cachedId = null;
 		
 		for (FieldMetadata fieldMetadata: entityMetadata.getFieldMetadataList())
-			fieldMetadata.getReader().read(iterator);
+			fieldMetadata.getReader().read(iterator, context);
 		
 		return null;
 	}

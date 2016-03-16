@@ -17,6 +17,10 @@ public class ArrayIterator<E> {
 		return data[offset];
 	}
 
+	public E peek(int i) {
+		return data[i];
+	}
+	
 	public E getNext(){
 		return data[offset++];
 	}
@@ -44,6 +48,10 @@ public class ArrayIterator<E> {
 
 	public int getPosition() {
 		return offset;
+	}
+
+	public boolean isOutOfBounds(int position) {
+		return position<0 || position>=data.length;
 	}
 
 }

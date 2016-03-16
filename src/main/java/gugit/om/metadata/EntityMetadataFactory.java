@@ -6,9 +6,6 @@ import gugit.om.mapping.Binding;
 import gugit.om.mapping.EntityCollectionWriter;
 import gugit.om.mapping.EntityReader;
 import gugit.om.mapping.EntityWriter;
-import gugit.om.mapping.NoBinding;
-import gugit.om.mapping.NoReader;
-import gugit.om.mapping.NoWriter;
 import gugit.om.utils.ArrayIterator;
 
 import java.lang.reflect.Field;
@@ -76,7 +73,7 @@ public class EntityMetadataFactory{
 				entityMetadata.addFieldMetadata( createDetailCollectionMetadata ( annotations, field, access ) );
 			else
 			if (annotations.isMasterEntity()){
-				entityMetadata.addFieldMetadata( createMasterMetadata( annotations, field, access ) );
+				entityMetadata.addFieldMetadata( createMasterMetadata( annotations, field, access, entityMetadata ) );
 				
 				/*Binding fieldAccessor = new Binding(access, field);
 				
@@ -99,11 +96,24 @@ public class EntityMetadataFactory{
 		}
 	}
 	
-	private FieldMetadata createMasterMetadata(AnnotationHelper annotations, Field field, MethodAccess access) {		
-		return new FieldMetadata("NOT IMPLEMENTED",  // TODO
-								NoBinding.getInstance(), 
-								NoWriter.getInstance(), 
-								NoReader.getInstance());
+	private FieldMetadata createMasterMetadata(AnnotationHelper annotations, Field field, MethodAccess access, EntityMetadata<?> entityMetadata) {
+		String fieldName = field.getName();
+		Binding fieldAccessor = new Binding(access, fieldName, false);
+		
+		Class<?> masterEntityType = field.getType();
+		MethodAccess masterFieldAccess = MethodAccess.get(masterEntityType);
+		String masterPropertyName = annotations.getMasterPropertyName();
+		
+		Binding masterFieldAccessor = new Binding(masterFieldAccess, masterPropertyName, false);
+		
+		String myColumnName = annotations.getMasterMyColumnName();
+
+		WriteTimeDependency dependency = new WriteTimeDependency(fieldAccessor, masterFieldAccessor, myColumnName);
+		
+		return new FieldMetadata(fieldName,
+								fieldAccessor, 
+								new DependencyWriter(dependency), 
+								new MasterDependencyReader(masterEntityType)); // TODO - master reader
 	}
 
 	private FieldMetadata createDetailCollectionMetadata(AnnotationHelper annotations, Field field, MethodAccess access) {

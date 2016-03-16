@@ -6,7 +6,7 @@ public class PrimitiveReader<E> implements IReader{
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public E read(ArrayIterator<Object> iterator) {
+	public E read(ArrayIterator<Object> iterator, ReadContext context) {
 		return (E)iterator.getNext();
 	}
 

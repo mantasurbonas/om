@@ -13,7 +13,7 @@ public class SkipReader implements IReader{
 	}
 	
 	@Override
-	public Object read(ArrayIterator<Object> iterator) {
+	public Object read(ArrayIterator<Object> iterator, ReadContext context) {
 		return iterator.getNext();
 	}
 

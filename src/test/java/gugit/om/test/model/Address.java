@@ -18,8 +18,8 @@ public class Address {
 	@Column(name="STREET")
 	public String street;
 
-	@MasterEntity(masterProperty="id", myColumn="PERSON_ID")
-	public Person person;
+	@MasterEntity(masterProperty="id", myColumn="OWNER_ID")
+	public Person owner;
 	
 	public Integer getId() {
 		return id;
@@ -57,11 +57,11 @@ public class Address {
 		return "Address #"+id+": "+city+", "+street+", "+country;
 	}
 
-	public Person getPerson() {
-		return person;
+	public Person getOwner() {
+		return owner;
 	}
 
-	public void setPerson(Person person) {
-		this.person = person;
+	public void setOwner(Person person) {
+		this.owner = person;
 	}
 }

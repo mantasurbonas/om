@@ -1,6 +1,7 @@
 package gugit.om;
 
 import gugit.om.metadata.EntityMetadata;
+import gugit.om.metadata.WriteTimeDependency;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -33,23 +34,24 @@ public class WriteBatch {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public void addInserts(Object entity, EntityMetadata<?> metadata, Map<String, Object> props) {
+	public void addInserts(Object entity, EntityMetadata<?> metadata, Map<String, Object> props, List<WriteTimeDependency> dependencies) {
 		List<InsertData<?>> insertList = getInserts().get(entity.getClass());
 		if (insertList == null){
 			insertList = new LinkedList<InsertData<?>>();
 			getInserts().put(entity.getClass(), insertList);
 		}
-		insertList.add(new InsertData(entity, metadata, props));
+		insertList.add(new InsertData(entity, metadata, props, dependencies));
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public void addUpdates(Object entity, EntityMetadata<?> metadata, Map<String, Object> props) {
+	public void addUpdates(Object entity, EntityMetadata<?> metadata, Map<String, Object> props, List<WriteTimeDependency> dependencies) {
 		List<UpdateData<?>> updatesList = getUpdates().get(entity.getClass());
 		if (updatesList == null){
 			updatesList = new LinkedList<UpdateData<?>>();
 			getUpdates().put(entity.getClass(), updatesList);
 		}
-		updatesList.add(new UpdateData(entity, metadata, props));	
+		updatesList.add(new UpdateData(entity, metadata, props, dependencies));	
 	}
+	
 
 }
