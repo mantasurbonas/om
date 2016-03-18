@@ -4,6 +4,7 @@ import gugit.om.annotations.Column;
 import gugit.om.annotations.DetailEntity;
 import gugit.om.annotations.Entity;
 import gugit.om.annotations.ID;
+import gugit.om.annotations.MasterEntity;
 
 @Entity(name="RECURSIVE")
 public class Recursive{
@@ -13,8 +14,11 @@ public class Recursive{
 	@Column(name="LABEL")
 	public String label;
 	
+	@MasterEntity(masterProperty="id", myColumn="PARENT_ID")
+	public Recursive parent;
+	
 	@DetailEntity(myProperty="id", detailColumn="PARENT_ID")
-	public Recursive recursive;
+	public Recursive child;
 
 	public Integer getId() {
 		return id;
@@ -32,17 +36,25 @@ public class Recursive{
 		this.label = label;
 	}
 
-	public Recursive getRecursive() {
-		return recursive;
+	public Recursive getChild() {
+		return child;
 	}
 
-	public void setRecursive(Recursive recursive) {
-		this.recursive = recursive;
+	public void setChild(Recursive child) {
+		this.child = child;
+	}
+	
+	public Recursive getParent(){
+		return parent;
+	}
+	
+	public void setParent(Recursive parent){
+		this.parent = parent;
 	}
 	
 	public String toString(){
 		return "Recursive #"+getId()
-					+" '"+getLabel()+"' "
-					+getRecursive();
+					+" '"+getLabel()+"' child is "
+					+getChild();
 	}
 }

@@ -3,6 +3,7 @@ package gugit.om.mapping;
 import gugit.om.metadata.DetailCollectionFieldMetadata;
 import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.FieldMetadata;
+import gugit.om.metadata.MasterRefFieldMetadata;
 import gugit.om.utils.StringTemplate;
 
 import java.util.List;
@@ -137,7 +138,7 @@ public class ReaderCompiler {
 												List<FieldMetadata> primitiveFields, 
 												List<FieldMetadata> pojoFields, 
 												List<DetailCollectionFieldMetadata> pojoCollectionFields,
-												List<FieldMetadata> masterReferenceFields) throws Exception {
+												List<MasterRefFieldMetadata> masterReferenceFields) throws Exception {
 
 		String entityClassName = entityClass.getCanonicalName();
 		
@@ -196,7 +197,7 @@ public class ReaderCompiler {
 	}
 
 
-	private String createMasterSettingSnipplet(List<FieldMetadata> masterFields) throws NotFoundException{
+	private String createMasterSettingSnipplet(List<MasterRefFieldMetadata> masterFields) throws NotFoundException{
 		StringBuilder src = new StringBuilder();
 		
 		for (FieldMetadata field: masterFields)

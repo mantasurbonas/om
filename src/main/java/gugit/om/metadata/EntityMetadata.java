@@ -32,7 +32,7 @@ public class EntityMetadata<E> {
 	private LinkedList<DetailCollectionFieldMetadata> pojoCollectionFields = new LinkedList<DetailCollectionFieldMetadata>();
 	
 	// references to parent (master) entities, if any
-	private LinkedList<FieldMetadata> masterRefFields = new LinkedList<FieldMetadata>();
+	private LinkedList<MasterRefFieldMetadata> masterRefFields = new LinkedList<MasterRefFieldMetadata>();
 
 
 	public EntityMetadata(Class<E> entityClass, final String entityName, FieldMetadata idField) {
@@ -77,7 +77,7 @@ public class EntityMetadata<E> {
 		return pojoCollectionFields;
 	}
 
-	public LinkedList<FieldMetadata> getMasterRefFields() {
+	public LinkedList<MasterRefFieldMetadata> getMasterRefFields() {
 		return masterRefFields;
 	}
 
@@ -93,7 +93,7 @@ public class EntityMetadata<E> {
 		pojoCollectionFields.add(field);
 	}
 	
-	public void addMasterRefField(FieldMetadata field){
+	public void addMasterRefField(MasterRefFieldMetadata field){
 		masterRefFields.add(field);
 	}
 	

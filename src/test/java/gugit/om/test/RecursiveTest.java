@@ -4,9 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import gugit.om.InsertData;
 import gugit.om.OM;
-import gugit.om.WriteBatch;
+import gugit.om.mapping.WriteBatch;
+import gugit.om.mapping.WritePacket;
 import gugit.om.test.model.Recursive;
 
 import java.util.LinkedList;
@@ -24,60 +24,83 @@ public class RecursiveTest {
 			
 		Recursive rec2 = new Recursive();
 			rec2.setLabel("label2");
-			rec2.setRecursive(rec1);
+			rec2.setParent(rec1);
+			
+			rec1.setChild(rec2);
 			
 		Recursive rec3 = new Recursive();
 			rec3.setLabel("label3");
-			rec3.setRecursive(rec2);
+			rec3.setParent(rec2);
+			
+			rec2.setChild(rec3);
 			
 		WriteBatch batch = new OM<Recursive>(Recursive.class).writeEntity(rec3);
 		
-		List<InsertData<?>> inserts = batch.getAllInserts(Recursive.class);
+		WritePacket writePacket = batch.getNext();
 		
-		assertEquals(3, inserts.size());
-		assertEquals(rec3.getLabel(), inserts.get(2).get("LABEL"));
+		assertNotNull(writePacket);
+		assertEquals(rec1.getLabel(), writePacket.getByColumnName("LABEL").value);
+		
+		writePacket.updateIDValue(100);
+		
+		writePacket = batch.getNext();
+		assertNotNull(writePacket);
+		assertEquals(rec2.getLabel(), writePacket.getByColumnName("LABEL").value);
+		assertEquals(rec2.getParent().getId(), writePacket.getByColumnName("PARENT_ID").value);
+
+		writePacket.updateIDValue(101);
+		
+		writePacket = batch.getNext();
+		assertNotNull(writePacket);
+		assertEquals(rec3.getLabel(), writePacket.getByColumnName("LABEL").value);
+		assertEquals(rec3.getParent().getId(), writePacket.getByColumnName("PARENT_ID").value);
+		
+		assertNull(batch.getNext());
 	}
 	
 	@Test
 	public void testReadingRecursiveEntities(){
-		Object[] resultset = new Object[]{1, "rec1", 2, "rec2", 3, "rec3"};
+		Object[] resultset = new Object[]{1, "rec1", null, 2, "rec2", 1, 3, "rec3", 2};
 		
 		Recursive entity = new OM<Recursive>(Recursive.class).readEntity(resultset);
 		
 		assertEquals(resultset[0], entity.getId().intValue());
 		assertEquals(resultset[1], entity.getLabel());
-		assertNotNull(entity.getRecursive());
+		assertNotNull(entity.getChild());
+		assertNull(entity.getParent());
 		
-		assertEquals(resultset[2], entity.getRecursive().getId());
-		assertEquals(resultset[3], entity.getRecursive().getLabel());
-		assertNotNull(entity.getRecursive().getRecursive());
+		assertEquals(resultset[3], entity.getChild().getId());
+		assertEquals(resultset[4], entity.getChild().getLabel());
+		assertNotNull(entity.getChild().getChild());
+		assertNotNull(entity.getChild().getParent());
+		assertEquals(entity, entity.getChild().getParent());
 		
-		assertEquals(resultset[4], entity.getRecursive().getRecursive().getId());
-		assertEquals(resultset[5], entity.getRecursive().getRecursive().getLabel());
-		assertNull(entity.getRecursive().getRecursive().getRecursive());
+		assertEquals(resultset[6], entity.getChild().getChild().getId());
+		assertEquals(resultset[7], entity.getChild().getChild().getLabel());
+		assertNull(entity.getChild().getChild().getChild());
 	}
 
 	@Test
 	public void testReadingMultipleRecursiveEntities(){
 		List<Object[]> resultset = new LinkedList<Object[]>();
-			resultset.add(new Object[]{1, "rec1", 2, "rec2", 3, "rec3"});
-			resultset.add(new Object[]{1, "rec4", 5, "rec5", 6, "rec6"});
-			resultset.add(new Object[]{7, "rec7", 8, "rec8", 9, "rec9"});
-			resultset.add(new Object[]{10, "rec10", 11, "rec11", 9, "rec9"});
+			resultset.add(new Object[]{1, "rec1", null, 2, "rec2", 1, 3, "rec3", 2});
+			resultset.add(new Object[]{1, "rec4", null, 5, "rec5", 1, 6, "rec6", 5});
+			resultset.add(new Object[]{7, "rec7", null, 8, "rec8", 7, 9, "rec9", 8});
+			resultset.add(new Object[]{10,"rec10",null, 11,"rec11",10,9, "rec9", 8});
 			
 		LinkedList<Recursive> entities = new OM<Recursive>(Recursive.class).readEntities(resultset);
 		
 		assertEquals(3, entities.size());
 		
 		assertEquals(1, entities.get(0).getId().intValue());
-		assertEquals("rec3", entities.get(0).getRecursive().getRecursive().getLabel());
+		assertEquals("rec3", entities.get(0).getChild().getChild().getLabel());
 		
 		assertEquals(7, entities.get(1).getId().intValue());
-		assertEquals("rec9", entities.get(1).getRecursive().getRecursive().getLabel());
+		assertEquals("rec9", entities.get(1).getChild().getChild().getLabel());
 		
 		assertEquals(10, entities.get(2).getId().intValue());
-		assertEquals("rec9", entities.get(2).getRecursive().getRecursive().getLabel());
-		assertTrue(entities.get(1).getRecursive().getRecursive() == entities.get(2).getRecursive().getRecursive());
+		assertEquals("rec9", entities.get(2).getChild().getChild().getLabel());
+		assertEquals(entities.get(1).getChild().getChild(), entities.get(2).getChild().getChild());
 	}
 	
 }

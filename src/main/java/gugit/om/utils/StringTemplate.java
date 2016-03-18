@@ -1,5 +1,7 @@
 package gugit.om.utils;
 
+import java.util.regex.Matcher;
+
 public class StringTemplate {
 
 	private String template;
@@ -17,7 +19,7 @@ public class StringTemplate {
 	}
 	
 	public StringTemplate replace(final String key, final String replacement){
-		result = result.replaceAll("%"+key+"%", replacement);
+		result = replaceAll(result, "%"+key+"%", replacement);
 		return this;
 	}
 	
@@ -28,5 +30,9 @@ public class StringTemplate {
 	
 	public String getResult(){
 		return result;
+	}
+	
+	private static String replaceAll(final String txt, final String key, final String replacement){
+		return txt.replaceAll(Matcher.quoteReplacement(key), Matcher.quoteReplacement(replacement));
 	}
 }

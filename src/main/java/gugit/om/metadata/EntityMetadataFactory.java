@@ -3,14 +3,16 @@ package gugit.om.metadata;
 import gugit.om.annotations.Entity;
 import gugit.om.annotations.ID;
 import gugit.om.mapping.AbstractReader;
+import gugit.om.mapping.AbstractWriter;
 import gugit.om.mapping.ReaderCompiler;
+import gugit.om.mapping.WriterCompiler;
 import gugit.om.utils.ArrayIterator;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-
-import sun.reflect.ReflectionFactory.GetReflectionFactoryAction;
+import java.util.Set;
 
 
 /***
@@ -24,8 +26,10 @@ public class EntityMetadataFactory{
 	private Map<Class<?>, EntityMetadata<?>> metadataCache = new HashMap<Class<?>, EntityMetadata<?>>();
 	
 	private Map<Class<?>, AbstractReader> readersCache = new HashMap<Class<?>, AbstractReader>();
+	private Map<Class<?>, AbstractWriter> writersCache = new HashMap<Class<?>, AbstractWriter>();
 	
 	private ReaderCompiler readerCompiler = new ReaderCompiler();
+	private WriterCompiler writerCompiler = new WriterCompiler();
 	
 	
 	@SuppressWarnings("unchecked")
@@ -47,6 +51,7 @@ public class EntityMetadataFactory{
 		}
 	
 		this.getEntityReader(entityMetadata);
+		this.getEntityWriter(entityMetadata);
 		
 		return entityMetadata;
 	}
@@ -62,6 +67,8 @@ public class EntityMetadataFactory{
 	}
 
 	private <T> void addFieldsToMetadata(EntityMetadata<T> entityMetadata, ArrayIterator<Field> fields) {
+		
+		Set<Class<?>> relatedTypes = new HashSet<Class<?>>();
 		
 		Integer columnOffset = fields.getPosition();
 		
@@ -85,8 +92,12 @@ public class EntityMetadataFactory{
 				columnOffset += 1;
 			}else
 			if (annotations.isMasterEntity()){
-				entityMetadata.addMasterRefField( new FieldMetadata(field.getName(), annotations.getMasterMyColumnName(), columnOffset));
+				entityMetadata.addMasterRefField( new MasterRefFieldMetadata(field.getName(), 
+																			annotations.getMasterPropertyName(), 
+																			annotations.getMasterMyColumnName(),
+																			columnOffset));
 				columnOffset += 1;
+				relatedTypes.add(field.getType());
 			}else
 			if (annotations.isDetailEntity()){
 				FieldMetadata fieldMeta = new FieldMetadata(field.getName(), "-=nevermind=-", columnOffset);
@@ -122,6 +133,9 @@ public class EntityMetadataFactory{
 		}
 		
 		entityMetadata.setWidth(columnOffset);
+		
+		for (Class<?> type: relatedTypes)
+			getMetadataFor(type);
 	}
 
 	public AbstractReader getEntityReader(EntityMetadata<?> entityMetadata){
@@ -136,6 +150,22 @@ public class EntityMetadataFactory{
 			readersCache.put(entityClass, reader);			
 			return reader;
 		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public AbstractWriter getEntityWriter(EntityMetadata<?> entityMetadata){
+		Class<?> entityClass = entityMetadata.getEntityClass();
+		
+		if (writersCache.containsKey(entityClass))
+			return writersCache.get(entityClass);
+
+		AbstractWriter writer;
+		try{
+			writer = makeWriter(entityMetadata);
+			writersCache.put(entityClass, writer);
+			return writer;
+		}catch(Exception e){
 			throw new RuntimeException(e);
 		}
 	}
@@ -155,6 +185,21 @@ public class EntityMetadataFactory{
 		return reader;
 	}
 
+	private AbstractWriter makeWriter(EntityMetadata<?> entityMetadata) throws Exception {
+		Class<AbstractWriter> writerClass;
+		Class<?> entityClass = entityMetadata.getEntityClass();
+		if (writerCompiler.doesWriterClassExist(entityClass)) {
+			writerClass = writerCompiler.getExistingWriterClass(entityClass);
+		}else{		
+			writerClass = writerCompiler.makeWriterClass(entityMetadata);
+		}
+		
+		AbstractWriter writer = writerClass.newInstance();
+		writer.setWriters(writersCache);
+		
+		return writer;
+	}
+	
 	private <T> FieldMetadata createIDMetadata(Class<T> entityClass, Field idField, int position) {
 		return new FieldMetadata(idField.getName(), 
 								resolveIdColumnName(idField), 

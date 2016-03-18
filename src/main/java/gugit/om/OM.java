@@ -1,12 +1,14 @@
 package gugit.om;
 
 import gugit.om.mapping.AbstractReader;
-import gugit.om.mapping.EntityWriter;
+import gugit.om.mapping.AbstractWriter;
 import gugit.om.mapping.ReadContext;
+import gugit.om.mapping.WriteBatch;
 import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.EntityMetadataFactory;
 import gugit.om.utils.ArrayIterator;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -19,7 +21,7 @@ import java.util.List;
 public class OM <E>{
 	
 	private AbstractReader entityReader;
-	private EntityWriter<E> entityWriter;
+	private AbstractWriter entityWriter;
 	private EntityMetadata<E> entityMetadata;
 	private ReadContext readContext;
 	
@@ -27,7 +29,7 @@ public class OM <E>{
 		EntityMetadataFactory metadataFactory = new EntityMetadataFactory();
 		entityMetadata = metadataFactory.getMetadataFor(entityClass);
 	
-		entityWriter = new EntityWriter<E>(entityMetadata);
+		entityWriter = metadataFactory.getEntityWriter(entityMetadata);
 		entityReader = metadataFactory.getEntityReader(entityMetadata);
 		
 		readContext = new ReadContext();
@@ -41,15 +43,21 @@ public class OM <E>{
 		readContext.clear();
 	}
 
-	public void writeEntity(E entity, WriteBatch batch){
-		WritePad<E> writePad = batch.createWritePad(entity, entityMetadata);
-		entityWriter.write(entity, writePad);
-	}
-	
 	public WriteBatch writeEntity(E entity){
 		WriteBatch result = new WriteBatch();
 		writeEntity(entity, result);
 		return result;
+	}
+	
+	public void writeEntity(E entity, WriteBatch batch){
+		entityWriter.write(entity, batch);
+	}
+	
+	public WriteBatch writeEntities(Collection<E> entities){
+		WriteBatch result = new WriteBatch();
+		for (E entity: entities)
+			writeEntity(entity, result);
+		return result;		
 	}
 	
 	public E readEntity(Object[] array){

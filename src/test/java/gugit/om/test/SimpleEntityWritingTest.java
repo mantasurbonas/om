@@ -1,14 +1,13 @@
 package gugit.om.test;
 
 import static org.junit.Assert.*;
+import gugit.om.OM;
+import gugit.om.mapping.WriteBatch;
+import gugit.om.mapping.WritePacket;
+import gugit.om.mapping.WritePacketElement;
+import gugit.om.test.model.Address;
 
 import java.util.List;
-
-import gugit.om.InsertData;
-import gugit.om.WriteBatch;
-import gugit.om.UpdateData;
-import gugit.om.OM;
-import gugit.om.test.model.Address;
 
 import org.junit.Test;
 
@@ -23,9 +22,19 @@ public class SimpleEntityWritingTest {
 		
 		WriteBatch batch = new OM<Address>(Address.class).writeEntity(address);
 		
-		List<InsertData<?>> inserts = batch.getAllInserts(Address.class);
-		assertEquals(inserts.size(), 1);
-		assertEquals(inserts.get(0).get("CITY"), "Wellington");
+		WritePacket insertData = batch.getNext();
+		assertNotNull(insertData);
+		assertNull(insertData.getIdElement().value);		
+		
+		List<WritePacketElement> insertTokens = insertData.getElements();
+		
+		String city = (String)getValueByName(insertTokens, "CITY");
+		assertEquals(city, "Wellington");
+		
+		assertNull(getValueByName(insertTokens, "PERSON_ID"));
+		
+		insertData = batch.getNext();
+		assertNull(insertData);
 	}
 
 	@Test
@@ -38,13 +47,20 @@ public class SimpleEntityWritingTest {
 		
 		WriteBatch batch = new OM<Address>(Address.class).writeEntity(address);
 		
-		List<InsertData<?>> inserts = batch.getAllInserts(Address.class);
-		assertNull(inserts);
+		WritePacket updateData = batch.getNext();
+
+		assertEquals(address.getId(), updateData.getIdElement().value);
+		assertEquals("Wellington", (String)getValueByName(updateData.getElements(), "CITY"));
 		
-		List<UpdateData<?>> updates = batch.getAllUpdates(Address.class);
-		assertEquals(updates.size(), 1);
-		assertEquals("Wellington", updates.get(0).get("CITY"));
+		updateData = batch.getNext();
+		assertNull(updateData);
 	}
 
+	private Object getValueByName(List<WritePacketElement> insertTokens, final String columnName) {
+		for (WritePacketElement e: insertTokens)
+			if (e.columnName.equalsIgnoreCase(columnName))
+				return e.value;
+		return null;
+	}
 	
 }
