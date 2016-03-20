@@ -1,12 +1,12 @@
 package gugit.om;
 
-import gugit.om.mapping.AbstractReader;
-import gugit.om.mapping.AbstractWriter;
+import gugit.om.mapping.ISerializer;
 import gugit.om.mapping.ReadContext;
 import gugit.om.mapping.WriteBatch;
-import gugit.om.metadata.EntityMetadata;
-import gugit.om.metadata.EntityMetadataFactory;
+import gugit.om.mapping.WriteContext;
+import gugit.om.metadata.EntityMetadataService;
 import gugit.om.utils.ArrayIterator;
+import gugit.om.utils.IDataIterator;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -14,32 +14,30 @@ import java.util.List;
 
 
 /***
- * facade for object reading and writing
+ * facade for object reading and writing.
+ * 
+ * retains some state between invocations, thus it is NOT THREAD SAFE.
  * 
  * @author urbonman
  */
 public class OM <E>{
 	
-	private AbstractReader entityReader;
-	private AbstractWriter entityWriter;
-	private EntityMetadata<E> entityMetadata;
-	private ReadContext readContext;
+	protected ISerializer<E> entitySerializer;
+
+	protected ReadContext readContext;
+	private WriteContext writeContext;
 	
-	public OM(Class<E> entityClass) {
-		EntityMetadataFactory metadataFactory = new EntityMetadataFactory();
-		entityMetadata = metadataFactory.getMetadataFor(entityClass);
-	
-		entityWriter = metadataFactory.getEntityWriter(entityMetadata);
-		entityReader = metadataFactory.getEntityReader(entityMetadata);
+	public OM(EntityMetadataService metadataService, Class<E> entityClass) {
+		entitySerializer = metadataService.getSerializerFor(entityClass);
 		
-		readContext = new ReadContext();
+		readContext = new ReadContext(metadataService);
+		writeContext = new WriteContext(metadataService);
 	}
 	
 	/***
 	 * call this before reusing this same object next time
 	 */
 	public void reset(){
-		entityReader.reset();
 		readContext.clear();
 	}
 
@@ -50,7 +48,7 @@ public class OM <E>{
 	}
 	
 	public void writeEntity(E entity, WriteBatch batch){
-		entityWriter.write(entity, batch);
+		entitySerializer.write(entity, batch, writeContext);
 	}
 	
 	public WriteBatch writeEntities(Collection<E> entities){
@@ -64,9 +62,8 @@ public class OM <E>{
 		return readEntity(new ArrayIterator<Object>(array));
 	}
 	
-	@SuppressWarnings("unchecked")
-	public E readEntity(ArrayIterator<Object> array){
-		return (E)entityReader.read(array, 0, readContext);
+	public E readEntity(IDataIterator<Object> array){
+		return (E)entitySerializer.read(array, 0, readContext);
 	}
 	
 	public LinkedList<E> readEntities(List<Object []> dataRows){

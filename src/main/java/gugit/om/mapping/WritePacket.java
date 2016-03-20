@@ -3,6 +3,7 @@ package gugit.om.mapping;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /***
  * Results of translation from a POJO entity into a dataset for the SQL UPDATE or INSERT statements.
@@ -70,7 +71,7 @@ public class WritePacket {
 		idAccessor.setValue(entity, idValue);
 		idElement.value = idValue;
 	}
-
+	
 	public void addElement(final String columnName, final String fieldName, Object value){
 		if (value==null)
 			value = NullWriteValue.getInstance();

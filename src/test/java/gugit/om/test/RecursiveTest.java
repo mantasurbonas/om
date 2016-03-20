@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import gugit.om.OM;
 import gugit.om.mapping.WriteBatch;
 import gugit.om.mapping.WritePacket;
+import gugit.om.metadata.EntityMetadataService;
 import gugit.om.test.model.Recursive;
 
 import java.util.LinkedList;
@@ -34,7 +35,9 @@ public class RecursiveTest {
 			
 			rec2.setChild(rec3);
 			
-		WriteBatch batch = new OM<Recursive>(Recursive.class).writeEntity(rec3);
+			
+		EntityMetadataService metadataService = new EntityMetadataService();
+		WriteBatch batch = new OM<Recursive>(metadataService, Recursive.class).writeEntity(rec3);
 		
 		WritePacket writePacket = batch.getNext();
 		
@@ -62,7 +65,8 @@ public class RecursiveTest {
 	public void testReadingRecursiveEntities(){
 		Object[] resultset = new Object[]{1, "rec1", null, 2, "rec2", 1, 3, "rec3", 2};
 		
-		Recursive entity = new OM<Recursive>(Recursive.class).readEntity(resultset);
+		EntityMetadataService metadataService = new EntityMetadataService();
+		Recursive entity = new OM<Recursive>(metadataService, Recursive.class).readEntity(resultset);
 		
 		assertEquals(resultset[0], entity.getId().intValue());
 		assertEquals(resultset[1], entity.getLabel());
@@ -88,7 +92,9 @@ public class RecursiveTest {
 			resultset.add(new Object[]{7, "rec7", null, 8, "rec8", 7, 9, "rec9", 8});
 			resultset.add(new Object[]{10,"rec10",null, 11,"rec11",10,9, "rec9", 8});
 			
-		LinkedList<Recursive> entities = new OM<Recursive>(Recursive.class).readEntities(resultset);
+			
+		EntityMetadataService metadataService = new EntityMetadataService();
+		LinkedList<Recursive> entities = new OM<Recursive>(metadataService, Recursive.class).readEntities(resultset);
 		
 		assertEquals(3, entities.size());
 		

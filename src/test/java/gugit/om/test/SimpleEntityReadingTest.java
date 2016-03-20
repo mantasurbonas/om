@@ -3,6 +3,7 @@ package gugit.om.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import gugit.om.OM;
+import gugit.om.metadata.EntityMetadataService;
 import gugit.om.test.model.SimpleAddress;
 
 import java.util.ArrayList;
@@ -18,8 +19,9 @@ public class SimpleEntityReadingTest {
 		Object row[] = new Object[]{
 			123, "New Zealand", "Wellington", "London str 42B", null
 		};
+		EntityMetadataService metadataService = new EntityMetadataService();
 		
-		SimpleAddress address = new OM<SimpleAddress>(SimpleAddress.class).readEntity(row);
+		SimpleAddress address = new OM<SimpleAddress>(metadataService, SimpleAddress.class).readEntity(row);
 		
 		assertEquals("failed deserializing id", 123, address.id.intValue());
 		assertEquals("failed deserializing entity field", address.street, row[3]);
@@ -32,7 +34,9 @@ public class SimpleEntityReadingTest {
 			resultset.add(new Object[]{ 123, "New Zealand", "Wellington", "London str 42B", null });
 			resultset.add(new Object[]{ 456, "New Zealand", "Nelson", "Oakfield av 16/2", null });
 		
-		LinkedList<SimpleAddress> entities = new OM<SimpleAddress>(SimpleAddress.class).readEntities(resultset);
+		EntityMetadataService metadataService = new EntityMetadataService();
+			
+		LinkedList<SimpleAddress> entities = new OM<SimpleAddress>(metadataService, SimpleAddress.class).readEntities(resultset);
 		
 		assertEquals(entities.size(), 2);
 		assertEquals(entities.get(0).id.intValue(), 123);
@@ -47,7 +51,9 @@ public class SimpleEntityReadingTest {
 			resultset.add(new Object[]{ 456, "New Zealand", "Nelson", "Oakfield av 16/2", null });
 			resultset.add(new Object[]{ 456, "Australia", "Darwin", "River str 94/5", null });
 		
-		LinkedList<SimpleAddress> entities = new OM<SimpleAddress>(SimpleAddress.class).readEntities(resultset);
+		EntityMetadataService metadataService = new EntityMetadataService();
+			
+		LinkedList<SimpleAddress> entities = new OM<SimpleAddress>(metadataService, SimpleAddress.class).readEntities(resultset);
 
 		assertEquals(2, entities.size());
 		assertEquals(entities.get(0).id.intValue(), 123);

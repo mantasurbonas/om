@@ -10,7 +10,7 @@
 	<version>1.0</version>
 	<packaging>jar</packaging>
 
-	<name>Gugit Object Mapping</name>
+	<name>Gugit Generic Object Mapping</name>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -5,6 +5,7 @@ import gugit.om.OM;
 import gugit.om.mapping.WriteBatch;
 import gugit.om.mapping.WritePacket;
 import gugit.om.mapping.WritePacketElement;
+import gugit.om.metadata.EntityMetadataService;
 import gugit.om.test.model.Address;
 
 import java.util.List;
@@ -20,7 +21,8 @@ public class SimpleEntityWritingTest {
 			address.setCity("Wellington");
 			address.setStreet("Ocean st 6-66");
 		
-		WriteBatch batch = new OM<Address>(Address.class).writeEntity(address);
+		EntityMetadataService metadataService = new EntityMetadataService();
+		WriteBatch batch = new OM<Address>(metadataService, Address.class).writeEntity(address);
 		
 		WritePacket insertData = batch.getNext();
 		assertNotNull(insertData);
@@ -45,7 +47,9 @@ public class SimpleEntityWritingTest {
 			address.setCity("Wellington");
 			address.setStreet("Ocean st 6-66");
 		
-		WriteBatch batch = new OM<Address>(Address.class).writeEntity(address);
+		EntityMetadataService metadataService = new EntityMetadataService();
+			
+		WriteBatch batch = new OM<Address>(metadataService, Address.class).writeEntity(address);
 		
 		WritePacket updateData = batch.getNext();
 

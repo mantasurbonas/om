@@ -1,49 +1,57 @@
 package gugit.om.mapping;
 
-import java.util.ArrayList;
+import gugit.om.utils.FastStack;
 
+import java.util.HashMap;
+import java.util.Map;
+
+
+/***
+ * Contains the state of IReader between invocations to IReader::read().
+ * 
+ * @author urbonman
+ *
+ */
 public class ReadContext {
 	
-	private static class StackEntry{
-		public Object entity;
-		public Object id;
-		public StackEntry(Object entity, Object id){
-			this.entity = entity;
-			this.id = id;
-		}
-		public StackEntry assign(Object entity, Object id){
-			this.entity = entity;
-			this.id = id;
-			return this;
-		}
-	};
+	// needed to read related entities
+	private ISerializerRegistry serializerRegistry;
 	
-	private ArrayList<StackEntry> stack = new ArrayList<StackEntry>(50);
-	private int stackSize = 0;
+	// read state
+	private FastStack currentlyReadEntities = new FastStack(); 
+	private Map<Integer, Object> previousReads = new HashMap<Integer, Object>();
+	
+	
+	public ReadContext(ISerializerRegistry registry){
+		this.serializerRegistry = registry;
+	}
 	
 	public void entityIsBeingRead(Object entity, Object id){
-		stackSize ++;
-		if (stackSize > stack.size())
-			stack.add(new StackEntry(entity, id));
-		else
-			stack.get(stackSize-1).assign(entity, id);
+		currentlyReadEntities.push(entity, id);
 	}
 	
 	public void entityReadingFinished(){
-		stackSize --;
+		currentlyReadEntities.pop();
 	}
 	
-	public Object findEntity(Class<?> type, Object id){
-		for (int i=0; i<stackSize; i++){
-			StackEntry e = stack.get(i);
-			if (type.isInstance(e.entity))
-				if (e.id.equals(id))
-					return e.entity;
-		}
-		return null;
+	public Object findMasterEntity(Class<?> type, Object id){
+		return currentlyReadEntities.find(type, id);
+	}
+	
+	public Object getCachedRead(int position){
+		return previousReads.get(position);
+	}
+	
+	public void cacheRead(int position, Object obj){
+		previousReads.put(position, obj);
 	}
 	
 	public void clear(){
-		stackSize = 0;
+		currentlyReadEntities.clear();
+		previousReads.clear();
+	}
+	
+	public <E> IReader<E> getReaderFor(Class<E> entityClass){
+		return serializerRegistry.getSerializerFor(entityClass);
 	}
 }

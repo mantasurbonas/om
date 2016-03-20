@@ -7,7 +7,7 @@ public class SimpleAddress{
 	@ID(name="ID")
 	public Integer id;
 	
-	@Column(name="COLUMN")
+	@Column(name="\"COLUMN\"")
 	public String country;
 	
 	@Column(name="CITY")

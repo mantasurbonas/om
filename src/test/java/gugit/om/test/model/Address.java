@@ -6,10 +6,10 @@ import gugit.om.annotations.MasterEntity;
 
 public class Address {
 
-	@ID(name="ID")
+	@ID(name="\"ID\"")
 	public Integer id;
 	
-	@Column(name="COUNTRY")
+	@Column(name="\"COUNTRY\"")
 	public String country;
 	
 	@Column(name="CITY")
@@ -18,7 +18,7 @@ public class Address {
 	@Column(name="STREET")
 	public String street;
 
-	@MasterEntity(masterProperty="id", myColumn="OWNER_ID")
+	@MasterEntity(masterProperty="id", myColumn="\"OWNER_ID\"")
 	public Person owner;
 	
 	public Integer getId() {

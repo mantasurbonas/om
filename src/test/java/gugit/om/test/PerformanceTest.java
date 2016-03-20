@@ -1,6 +1,7 @@
 package gugit.om.test;
 
 import gugit.om.OM;
+import gugit.om.metadata.EntityMetadataService;
 import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
 
@@ -28,7 +29,8 @@ public class PerformanceTest {
 		int resultsetSize = 1000000;
 		addAddressEntities(resultset, resultsetSize);
 		
-		OM<Address> om = new OM<Address>(Address.class);
+		EntityMetadataService metadataService = new EntityMetadataService();
+		OM<Address> om = new OM<Address>(metadataService, Address.class);
 		
 		int testCount = 50;
 		long totalTime = 0;
@@ -56,7 +58,8 @@ public class PerformanceTest {
 		int resultsetSize = 500000;
 		addPersonEntities(resultset, resultsetSize);
 		
-		OM<Person> om = new OM<Person>(Person.class);
+		EntityMetadataService metadataService = new EntityMetadataService();
+		OM<Person> om = new OM<Person>(metadataService, Person.class);
 				
 		int testCount = 50;
 		long totalTime = 0;

@@ -35,4 +35,10 @@ public class StringTemplate {
 	private static String replaceAll(final String txt, final String key, final String replacement){
 		return txt.replaceAll(Matcher.quoteReplacement(key), Matcher.quoteReplacement(replacement));
 	}
+	
+	public StringTemplate dump(boolean shouldDump){
+		if (shouldDump)
+			System.out.println(result);
+		return this;
+	}
 }

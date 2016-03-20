@@ -1,8 +1,16 @@
 package gugit.om.mapping;
 
 
-public interface IWriter {
+/***
+ * serializes an entity to the specified WriteBatch.
+ * 
+ * stateless and thus thread-safe
+ * 	(provided params are thread-specific, of course)
+ *  
+ * @author urbonman 
+ */
+public interface IWriter <E>{
 
-	public void write(Object obj, WriteBatch batch);
+	void write(E entity, WriteBatch batch, WriteContext writeContext);
 	
 }

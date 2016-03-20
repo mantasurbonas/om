@@ -2,11 +2,11 @@ package gugit.om.metadata;
 
 import gugit.om.annotations.Entity;
 import gugit.om.annotations.ID;
-import gugit.om.mapping.AbstractReader;
-import gugit.om.mapping.AbstractWriter;
-import gugit.om.mapping.ReaderCompiler;
-import gugit.om.mapping.WriterCompiler;
+import gugit.om.mapping.ISerializer;
+import gugit.om.mapping.ISerializerRegistry;
+import gugit.om.mapping.SerializerCompiler;
 import gugit.om.utils.ArrayIterator;
+import gugit.om.utils.IDataIterator;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -21,15 +21,13 @@ import java.util.Set;
  * @author urbonman
  *
  */
-public class EntityMetadataFactory{
+public class EntityMetadataService implements ISerializerRegistry{
 	
 	private Map<Class<?>, EntityMetadata<?>> metadataCache = new HashMap<Class<?>, EntityMetadata<?>>();
 	
-	private Map<Class<?>, AbstractReader> readersCache = new HashMap<Class<?>, AbstractReader>();
-	private Map<Class<?>, AbstractWriter> writersCache = new HashMap<Class<?>, AbstractWriter>();
+	private Map<Class<?>, ISerializer<?>> serializersCache = new HashMap<Class<?>, ISerializer<?>>();
 	
-	private ReaderCompiler readerCompiler = new ReaderCompiler();
-	private WriterCompiler writerCompiler = new WriterCompiler();
+	private SerializerCompiler serializerCompiler = new SerializerCompiler();
 	
 	
 	@SuppressWarnings("unchecked")
@@ -38,7 +36,7 @@ public class EntityMetadataFactory{
 		if (metadataCache.containsKey(entityClass))
 			return (EntityMetadata<T>) metadataCache.get(entityClass);
 		
-		ArrayIterator<Field> fields = new ArrayIterator<Field>(entityClass.getFields());
+		IDataIterator<Field> fields = new ArrayIterator<Field>(entityClass.getFields());
 
 		EntityMetadata<T> entityMetadata = createMetadata(entityClass, fields);	
 		metadataCache.put(entityClass, entityMetadata);
@@ -50,13 +48,12 @@ public class EntityMetadataFactory{
 			throw e;
 		}
 	
-		this.getEntityReader(entityMetadata);
-		this.getEntityWriter(entityMetadata);
+		this.getSerializerFor(entityClass);
 		
 		return entityMetadata;
 	}
 
-	private <T> EntityMetadata<T> createMetadata(Class<T> entityClass, ArrayIterator<Field> fields) {
+	private <T> EntityMetadata<T> createMetadata(Class<T> entityClass, IDataIterator<Field> fields) {
 		Field idField = findID(fields);
 		FieldMetadata idMetadata = createIDMetadata( entityClass, idField, fields.getPosition() );		
 		fields.next();
@@ -66,7 +63,7 @@ public class EntityMetadataFactory{
 									idMetadata);
 	}
 
-	private <T> void addFieldsToMetadata(EntityMetadata<T> entityMetadata, ArrayIterator<Field> fields) {
+	private <T> void addFieldsToMetadata(EntityMetadata<T> entityMetadata, IDataIterator<Field> fields) {
 		
 		Set<Class<?>> relatedTypes = new HashSet<Class<?>>();
 		
@@ -138,66 +135,31 @@ public class EntityMetadataFactory{
 			getMetadataFor(type);
 	}
 
-	public AbstractReader getEntityReader(EntityMetadata<?> entityMetadata){
-		Class<?> entityClass = entityMetadata.getEntityClass();
+	public <T> ISerializer<T> getSerializerFor(Class<T> entityClass){
 		
-		if (readersCache.containsKey(entityClass))
-			return readersCache.get(entityClass);
+		if (serializersCache.containsKey(entityClass))
+			return (ISerializer<T>) serializersCache.get(entityClass);
 		
-		AbstractReader reader;
 		try {
-			reader = makeReader(entityMetadata);
-			readersCache.put(entityClass, reader);			
-			return reader;
+			ISerializer<T> serializer = makeSerializer(getMetadataFor(entityClass));
+			serializersCache.put(entityClass, serializer);			
+			return serializer;
+			
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 	
-	public AbstractWriter getEntityWriter(EntityMetadata<?> entityMetadata){
-		Class<?> entityClass = entityMetadata.getEntityClass();
-		
-		if (writersCache.containsKey(entityClass))
-			return writersCache.get(entityClass);
-
-		AbstractWriter writer;
-		try{
-			writer = makeWriter(entityMetadata);
-			writersCache.put(entityClass, writer);
-			return writer;
-		}catch(Exception e){
-			throw new RuntimeException(e);
-		}
-	}
-
-	private AbstractReader makeReader(EntityMetadata<?> entityMetadata) throws Exception {
-		Class<AbstractReader> readerClass;
-		Class<?> entityClass = entityMetadata.getEntityClass();
-		if (readerCompiler.doesReaderClassExist(entityClass)) {
-			readerClass = readerCompiler.getExistingReaderClass(entityClass);
+	private <T> ISerializer<T> makeSerializer(EntityMetadata<T> entityMetadata) throws Exception {
+		Class<ISerializer<T>> serializerClass;
+		Class<T> entityClass = entityMetadata.getEntityClass();
+		if (serializerCompiler.doesSerializerClassExist(entityClass)) {
+			serializerClass = serializerCompiler.getExistingSerializerClass(entityClass);
 		}else{		
-			readerClass = readerCompiler.makeReaderClass(entityMetadata);
+			serializerClass = serializerCompiler.makeSerializerClass(entityMetadata);
 		}
 		
-		AbstractReader reader = readerClass.newInstance();
-		reader.setReaders(readersCache);
-		
-		return reader;
-	}
-
-	private AbstractWriter makeWriter(EntityMetadata<?> entityMetadata) throws Exception {
-		Class<AbstractWriter> writerClass;
-		Class<?> entityClass = entityMetadata.getEntityClass();
-		if (writerCompiler.doesWriterClassExist(entityClass)) {
-			writerClass = writerCompiler.getExistingWriterClass(entityClass);
-		}else{		
-			writerClass = writerCompiler.makeWriterClass(entityMetadata);
-		}
-		
-		AbstractWriter writer = writerClass.newInstance();
-		writer.setWriters(writersCache);
-		
-		return writer;
+		return serializerClass.newInstance();
 	}
 	
 	private <T> FieldMetadata createIDMetadata(Class<T> entityClass, Field idField, int position) {
@@ -207,7 +169,7 @@ public class EntityMetadataFactory{
 	}
 
 	
-	private static Field findID(ArrayIterator<Field> fields){
+	private static Field findID(IDataIterator<Field> fields){
 		while (! fields.isFinished()){
 			Field field = fields.peek(); 
 			

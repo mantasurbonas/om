@@ -6,6 +6,7 @@ import gugit.om.mapping.NullWriteValue;
 import gugit.om.mapping.WriteBatch;
 import gugit.om.mapping.WritePacket;
 import gugit.om.mapping.WritePacketElement;
+import gugit.om.metadata.EntityMetadataService;
 import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
 
@@ -20,7 +21,8 @@ public class MasterDetailWritingTest {
 		Person person = new Person();
 		person.setName("John Smith");
 		
-		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
+		EntityMetadataService metadataService = new EntityMetadataService();
+		WriteBatch batch = new OM<Person>(metadataService, Person.class).writeEntity(person);
 		
 		WritePacket insertData = batch.getNext();
 		assertEquals(person.getName(), getValueByName(insertData.getElements(), "NAME"));
@@ -34,7 +36,8 @@ public class MasterDetailWritingTest {
 		Person person = new Person();
 		person.setId(456);
 
-		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
+		EntityMetadataService metadataService = new EntityMetadataService();
+		WriteBatch batch = new OM<Person>(metadataService, Person.class).writeEntity(person);
 		
 		WritePacket updateData = batch.getNext();
 		assertEquals(NullWriteValue.getInstance(), getValueByName(updateData.getElements(), "NAME"));
@@ -56,15 +59,15 @@ public class MasterDetailWritingTest {
 			
 		person.setCurrentAddress(address);
 		
-		
-		WriteBatch batch = new OM<Person>(Person.class).writeEntity(person);
+		EntityMetadataService metadataService = new EntityMetadataService();
+		WriteBatch batch = new OM<Person>(metadataService, Person.class).writeEntity(person);
 		
 		WritePacket insertData = batch.getNext();
 		assertEquals(insertData.getEntity(), person); // person must be persisted before person so that it could use person's ID 
 		
 		insertData = batch.getNext();
 		assertEquals(insertData.getEntity(), address); //
-		assertEquals(address.getOwner().getId(), getValueByName(insertData.getElements(), "OWNER_ID"));
+		assertEquals(address.getOwner().getId(), getValueByName(insertData.getElements(), "\"OWNER_ID\""));
 		
 		insertData = batch.getNext();
 		assertNull(insertData);
@@ -93,7 +96,8 @@ public class MasterDetailWritingTest {
 			address4.setOwner(person);	
 			person.getPreviousAddresses().add(address4);
 				
-		WriteBatch batch = new OM<Address>(Address.class).writeEntity(address4);
+		EntityMetadataService metadataService = new EntityMetadataService();
+		WriteBatch batch = new OM<Address>(metadataService, Address.class).writeEntity(address4);
 		
 		WritePacket personWrite = batch.getNext();
 		assertEquals(person, personWrite.getEntity());
@@ -103,7 +107,7 @@ public class MasterDetailWritingTest {
 		
 		WritePacket addressWrite = batch.getNext();
 		assertEquals(Address.class, addressWrite.getEntity().getClass());
-		assertEquals(77, getValueByName(addressWrite.getElements(), "OWNER_ID"));
+		assertEquals(77, getValueByName(addressWrite.getElements(), "\"OWNER_ID\""));
 		
 		assertNotNull(batch.getNext());
 		
