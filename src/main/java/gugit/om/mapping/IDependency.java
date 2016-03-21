@@ -10,7 +10,7 @@ package gugit.om.mapping;
  * @author urbonman
  *
  */
-public interface Dependency{
+public interface IDependency{
 	
 	public Object solve(Object param);
 	

@@ -16,10 +16,10 @@ public class Person {
 	@Column(name="NAME")
 	public String name;
 	
-	@DetailEntity(myProperty="id", detailColumn="PERSON_ID")
+	@DetailEntity
 	public Address currentAddress;
 	
-	@DetailEntities(myProperty="id", detailClass=Address.class, detailColumn="PERSON_ID")
+	@DetailEntities(detailClass=Address.class)
 	public List<Address> previousAddresses = new LinkedList<Address>();
 
 	public Integer getId() {

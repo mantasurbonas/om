@@ -1,5 +1,12 @@
 package gugit.om.utils;
 
+/***
+ * abstraction to a random access iterator over a 1-dimensional row of something.
+ *  
+ * @author urbonman
+ *
+ * @param <E>
+ */
 public interface IDataIterator <E>{
 
 	/***

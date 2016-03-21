@@ -2,6 +2,12 @@ package gugit.om.utils;
 
 import java.util.ArrayList;
 
+/***
+ * a memory- and garbage-efficient stack to hold <id, object> pairs
+ * 
+ * @author urbonman
+ *
+ */
 public class FastStack{
 
 	private static class StackEntry{

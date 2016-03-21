@@ -6,7 +6,7 @@ package gugit.om.mapping;
  * @author urbonman
  *
  */
-public interface PropertyAccessor<E, V> {
+public interface IPropertyAccessor<E, V> {
 
 	void setValue(E entity, V value);
 	

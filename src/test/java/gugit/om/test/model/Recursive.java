@@ -17,7 +17,7 @@ public class Recursive{
 	@MasterEntity(masterProperty="id", myColumn="PARENT_ID")
 	public Recursive parent;
 	
-	@DetailEntity(myProperty="id", detailColumn="PARENT_ID")
+	@DetailEntity
 	public Recursive child;
 
 	public Integer getId() {

@@ -3,15 +3,14 @@ package gugit.om.mapping;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /***
- * Results of translation from a POJO entity into a dataset for the SQL UPDATE or INSERT statements.
+ * Contains the results of translation from a POJO entity into a dataset for the SQL UPDATE or INSERT statements.
  * 
  * (A data that should come together into a single INSERT or UPDATE statement)
  * 
  * This can be blocked by dependencies to other WritePackets - i.e. if we need other objects to be
- * 		inserted into the DB and ID's retrieved so that our entity could satisfy foreign key constraints.  
+ * 		first inserted into the DB and ID's retrieved so that our entity could satisfy foreign key constraints.  
  * 
  * @author urbonman
  *
@@ -37,7 +36,7 @@ public class WritePacket {
 	/***
 	 * describes values that have to be retrieved from other entities before persisting this entity.
 	 */
-	private List<Dependency> dependencies = new LinkedList<Dependency>();
+	private List<IDependency> dependencies = new LinkedList<IDependency>();
 	
 	/***
 	 * a delegate for accessing ID property of our entity.
@@ -45,7 +44,7 @@ public class WritePacket {
 	 * this way any WritePackets that depend on our entity's ID can proceed to persistance.
 	 */
 	@SuppressWarnings("rawtypes")
-	private PropertyAccessor idAccessor;
+	private IPropertyAccessor idAccessor;
 
 	
 	public WritePacket(Object entity) {
@@ -57,7 +56,7 @@ public class WritePacket {
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public void setID(final String idColumnName, final String idFieldName, PropertyAccessor idAccess){
+	public void setID(final String idColumnName, final String idFieldName, IPropertyAccessor idAccess){
 		this.idElement = new WritePacketElement(idColumnName, idFieldName, idAccess.getValue(entity));
 		this.idAccessor = idAccess;
 	}
@@ -97,12 +96,12 @@ public class WritePacket {
 		return null;
 	}
 	
-	public void addDependency(Dependency dependency) {
+	public void addDependency(IDependency dependency) {
 		this.dependencies.add(dependency);
 	}
 	
 	public boolean trySolveDependencies() {
-		Iterator<Dependency> i = dependencies.iterator();
+		Iterator<IDependency> i = dependencies.iterator();
 		
 		while(i.hasNext()){
 			Object[] solution = (Object[])(i.next().solve(entity));

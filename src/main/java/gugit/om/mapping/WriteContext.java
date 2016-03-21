@@ -1,8 +1,14 @@
 package gugit.om.mapping;
 
+/***
+ * aggregates any parameters needed for IWriter::write() 
+ *  
+ * @author urbonman
+ *
+ */
 public class WriteContext {
 
-	private ISerializerRegistry serializerRegistry;
+	protected ISerializerRegistry serializerRegistry;
 
 	public WriteContext(ISerializerRegistry registry){
 		this.serializerRegistry = registry;

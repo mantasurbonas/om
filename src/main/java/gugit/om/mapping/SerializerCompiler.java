@@ -98,7 +98,7 @@ public class SerializerCompiler {
 			+ " } \n";
 			
 	private final String ID_ACCESS_FIELD_TEMPLATE = 
-			"	private static PropertyAccessor idAccess = new %ID_ACCESS_CLASS_NAME%();\n";
+			"	private static IPropertyAccessor idAccess = new %ID_ACCESS_CLASS_NAME%();\n";
 			
 		private final String PROP_ACCESS_SET_VALUE =
 			"		public void setValue(Object obj, Object id){\n"+
@@ -136,7 +136,7 @@ public class SerializerCompiler {
 		+ "	}\n";
 
 		private final String PARENT_DEPENDENCY_FIELD_TEMPLATE = 
-				  " private static Dependency %DEPENDENCY_VAR_NAME% "
+				  " private static IDependency %DEPENDENCY_VAR_NAME% "
 				  + " = new %DEPENDENCY_CLASS_NAME%();\n ";
 		
 		private final String SOLVE_METHOD_TEMPLATE = 
@@ -352,14 +352,14 @@ public class SerializerCompiler {
 		String dependencyClassName = getMasterDependencyClassName(entityClassName, masterInfo);
 		
 		CtClass depClass = pool.makeClass(dependencyClassName);
-		depClass.addInterface(pool.get("gugit.om.mapping.Dependency"));
+		depClass.addInterface(pool.get("gugit.om.mapping.IDependency"));
 		depClass.addMethod(CtNewMethod.make(createSolveMethodSrc(entityClassName, masterInfo), depClass));
 		depClass.toClass();
 	}
 
 	private void createIDAccessClass(Class<?> entityClass, FieldMetadata idField) throws Exception{
 		CtClass accClass = pool.makeClass(getIdAccessClassName(entityClass));
-		accClass.addInterface(pool.get("gugit.om.mapping.PropertyAccessor"));
+		accClass.addInterface(pool.get("gugit.om.mapping.IPropertyAccessor"));
 		
 		String entityClassName = entityClass.getCanonicalName();
 		

@@ -16,7 +16,7 @@ import java.util.List;
 /***
  * facade for object reading and writing.
  * 
- * retains some state between invocations, thus it is NOT THREAD SAFE.
+ * retains some state during and between invocations, thus it is NOT THREAD SAFE.
  * 
  * @author urbonman
  */

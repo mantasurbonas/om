@@ -5,7 +5,6 @@ import gugit.om.annotations.DetailEntities;
 import gugit.om.annotations.DetailEntity;
 import gugit.om.annotations.ID;
 import gugit.om.annotations.Ignore;
-import gugit.om.annotations.ManyToMany;
 import gugit.om.annotations.MasterEntity;
 import gugit.om.annotations.Transient;
 
@@ -42,10 +41,6 @@ public class AnnotationHelper {
 	public boolean isMasterEntity() {
 		return containsClass(MasterEntity.class);
 	}
-
-	public boolean isManyToMany() {
-		return containsClass(ManyToMany.class);
-	}
 	
 	public boolean isTransient() {
 		return annotations.length == 0 || containsClass(Transient.class);
@@ -69,14 +64,7 @@ public class AnnotationHelper {
 	public String getMasterMyColumnName(){
 		MasterEntity annotation = (MasterEntity) getByClass(MasterEntity.class);
 		return annotation.myColumn();
-	}
-	
-	public Class<?> getManyToManyFieldType() {
-		ManyToMany annotation = (ManyToMany)getByClass(ManyToMany.class);
-		return annotation.othClass();
-	}
-
-	
+	}	
 	
 	public boolean containsClass(Class<?> clazz) {
 		return getByClass(clazz) != null;
