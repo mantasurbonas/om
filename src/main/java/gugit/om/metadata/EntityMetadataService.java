@@ -2,9 +2,7 @@ package gugit.om.metadata;
 
 import gugit.om.annotations.Entity;
 import gugit.om.annotations.ID;
-import gugit.om.mapping.ISerializer;
 import gugit.om.mapping.ISerializerRegistry;
-import gugit.om.mapping.SerializerCompiler;
 import gugit.om.utils.ArrayIterator;
 import gugit.om.utils.IDataIterator;
 
@@ -21,14 +19,14 @@ import java.util.Set;
  * @author urbonman
  *
  */
-public class EntityMetadataService implements ISerializerRegistry{
+public class EntityMetadataService {
 	
 	private Map<Class<?>, EntityMetadata<?>> metadataCache = new HashMap<Class<?>, EntityMetadata<?>>();
-	
-	private Map<Class<?>, ISerializer<?>> serializersCache = new HashMap<Class<?>, ISerializer<?>>();
-	
-	private SerializerCompiler serializerCompiler = new SerializerCompiler();
-	
+	private ISerializerRegistry serializerRegistry;
+		
+	public void setSerializerRegistry(ISerializerRegistry serializers){
+		this.serializerRegistry = serializers;
+	}
 	
 	@SuppressWarnings("unchecked")
 	public <T> EntityMetadata<T> getMetadataFor(Class<T> entityClass){
@@ -38,7 +36,7 @@ public class EntityMetadataService implements ISerializerRegistry{
 		
 		IDataIterator<Field> fields = new ArrayIterator<Field>(entityClass.getFields());
 
-		EntityMetadata<T> entityMetadata = createMetadata(entityClass, fields);	
+		EntityMetadata<T> entityMetadata = createMetadataInstance(entityClass, fields);	
 		metadataCache.put(entityClass, entityMetadata);
 		
 		try{
@@ -48,14 +46,14 @@ public class EntityMetadataService implements ISerializerRegistry{
 			throw e;
 		}
 	
-		this.getSerializerFor(entityClass);
+		serializerRegistry.getSerializerFor(entityClass);
 		
 		return entityMetadata;
 	}
 
-	private <T> EntityMetadata<T> createMetadata(Class<T> entityClass, IDataIterator<Field> fields) {
+	private <T> EntityMetadata<T> createMetadataInstance(Class<T> entityClass, IDataIterator<Field> fields) {
 		Field idField = findID(fields);
-		FieldMetadata idMetadata = createIDMetadata( entityClass, idField, fields.getPosition() );		
+		ColumnFieldMetadata idMetadata = createIDMetadata(idField, fields.getPosition());		
 		fields.next();
 
 		return new EntityMetadata<T>(entityClass, 
@@ -77,7 +75,7 @@ public class EntityMetadataService implements ISerializerRegistry{
 				throw new RuntimeException("ID field must be one and only one");
 			
 			if (annotations.isIgnored()){
-				entityMetadata.addPrimitiveField(new IgnoreFieldMetadata(columnOffset));
+				entityMetadata.addIgnoreField(new IgnoreFieldMetadata(field, columnOffset));
 				columnOffset += 1;
 			}
 			else
@@ -85,11 +83,11 @@ public class EntityMetadataService implements ISerializerRegistry{
 				; // just skipping transient fields
 			else
 			if (annotations.isColumn()){
-				entityMetadata.addPrimitiveField(new FieldMetadata(field.getName(), annotations.getColumnName(), columnOffset));
+				entityMetadata.addPrimitiveField(new ColumnFieldMetadata(field, annotations.getColumnName(), columnOffset));
 				columnOffset += 1;
 			}else
 			if (annotations.isMasterEntity()){
-				entityMetadata.addMasterRefField( new MasterRefFieldMetadata(field.getName(), 
+				entityMetadata.addMasterRefField( new MasterRefFieldMetadata(field, 
 																			annotations.getMasterPropertyName(), 
 																			annotations.getMasterMyColumnName(),
 																			columnOffset));
@@ -97,7 +95,7 @@ public class EntityMetadataService implements ISerializerRegistry{
 				relatedTypes.add(field.getType());
 			}else
 			if (annotations.isDetailEntity()){
-				FieldMetadata fieldMeta = new FieldMetadata(field.getName(), "-=nevermind=-", columnOffset);
+				PojoFieldMetadata fieldMeta = new PojoFieldMetadata(field, columnOffset);
 				entityMetadata.addPojoField( fieldMeta );
 				
 				EntityMetadata<?> pojoMetadata = getMetadataFor(field.getType());
@@ -110,7 +108,7 @@ public class EntityMetadataService implements ISerializerRegistry{
 			else
 			if (annotations.isDetailEntities()){
 				Class<?> detailClass = annotations.getDetailEntitiesType();
-				entityMetadata.addPojoCollectionField( new DetailCollectionFieldMetadata(field.getName(), detailClass, columnOffset));
+				entityMetadata.addPojoCollectionField( new DetailCollectionFieldMetadata(field, detailClass, columnOffset));
 				
 				EntityMetadata<?> pojoMetadata = getMetadataFor(detailClass);
 				
@@ -135,37 +133,11 @@ public class EntityMetadataService implements ISerializerRegistry{
 			getMetadataFor(type);
 	}
 
-	public <T> ISerializer<T> getSerializerFor(Class<T> entityClass){
-		
-		if (serializersCache.containsKey(entityClass))
-			return (ISerializer<T>) serializersCache.get(entityClass);
-		
-		try {
-			ISerializer<T> serializer = makeSerializer(getMetadataFor(entityClass));
-			serializersCache.put(entityClass, serializer);			
-			return serializer;
-			
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
 	
-	private <T> ISerializer<T> makeSerializer(EntityMetadata<T> entityMetadata) throws Exception {
-		Class<ISerializer<T>> serializerClass;
-		Class<T> entityClass = entityMetadata.getEntityClass();
-		if (serializerCompiler.doesSerializerClassExist(entityClass)) {
-			serializerClass = serializerCompiler.getExistingSerializerClass(entityClass);
-		}else{		
-			serializerClass = serializerCompiler.makeSerializerClass(entityMetadata);
-		}
-		
-		return serializerClass.newInstance();
-	}
-	
-	private <T> FieldMetadata createIDMetadata(Class<T> entityClass, Field idField, int position) {
-		return new FieldMetadata(idField.getName(), 
-								resolveIdColumnName(idField), 
-								position);
+	private <T> ColumnFieldMetadata createIDMetadata(Field idField, int position) {
+		return new ColumnFieldMetadata(idField, 
+										resolveIdColumnName(idField), 
+										position);
 	}
 
 	

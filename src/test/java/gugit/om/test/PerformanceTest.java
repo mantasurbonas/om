@@ -1,9 +1,9 @@
 package gugit.om.test;
 
 import gugit.om.OM;
-import gugit.om.metadata.EntityMetadataService;
 import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
+import gugit.om.test.utils.TestUtils;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -14,8 +14,8 @@ import org.junit.Test;
 /***
  * Notes on performance as of 2016-03-13:
  * 
- * 1 000 000 x trivial entities mapped in avg 168-159 msec
- *   100 000 x 1:master vs 3:detail entities mapped in avg 81-76 msec
+ * 1 000 000 x trivial entities mapped in 62 msec
+ *   500 000 x 1:master vs 3:detail entities mapped in 141
  *   
  * @author urbonman
  *
@@ -27,10 +27,9 @@ public class PerformanceTest {
 		List<Object[]> resultset = new LinkedList<Object[]>();
 		
 		int resultsetSize = 1000000;
-		addAddressEntities(resultset, resultsetSize);
+		createAddressResultset(resultset, resultsetSize);
 		
-		EntityMetadataService metadataService = new EntityMetadataService();
-		OM<Address> om = new OM<Address>(metadataService, Address.class);
+		OM om = TestUtils.createObjectMapper();
 		
 		int testCount = 50;
 		long totalTime = 0;
@@ -38,7 +37,7 @@ public class PerformanceTest {
 		long max = 0;
 		long t;
 		for (int i=0; i<testCount; i++){
-			t = testPerformance(om, resultset);
+			t = testPerformance(om, resultset, Address.class);
 			totalTime += t;
 			min = Math.min(t, min);
 			max = Math.max(t, max);
@@ -56,10 +55,9 @@ public class PerformanceTest {
 		List<Object[]> resultset = new LinkedList<Object[]>();
 		
 		int resultsetSize = 500000;
-		addPersonEntities(resultset, resultsetSize);
+		createPersonResultset(resultset, resultsetSize);
 		
-		EntityMetadataService metadataService = new EntityMetadataService();
-		OM<Person> om = new OM<Person>(metadataService, Person.class);
+		OM om = TestUtils.createObjectMapper();
 				
 		int testCount = 50;
 		long totalTime = 0;
@@ -67,7 +65,7 @@ public class PerformanceTest {
 		long max = 0;
 		long t;
 		for (int i=0; i<testCount; i++){
-			t = testPerformance(om, resultset);
+			t = testPerformance(om, resultset, Person.class);
 			totalTime += t;
 			min = Math.min(t, min);
 			max = Math.max(t, max);
@@ -82,16 +80,16 @@ public class PerformanceTest {
 	}
 	
 	
-	private long testPerformance(OM<?> om, List<Object[]> resultset) {
+	private long testPerformance(OM om, List<Object[]> resultset, Class<?> claz) {
 		long started = System.currentTimeMillis();
 		@SuppressWarnings("rawtypes")
-		LinkedList entities = om.readEntities(resultset);
+		List entities = om.readEntities(resultset, claz);
 		long finished = System.currentTimeMillis();
 		entities.clear();
 		return finished - started;
 	}
 	
-	private void addPersonEntities(List<Object[]> resultset, int n) {
+	private void createPersonResultset(List<Object[]> resultset, int n) {
 		int j=0;
 		for (int i=0; i<n; i++){
 			resultset.add(new Object[]{i, "Name"+i, n+i, "country"+i, "city"+i, "street"+i, i, ++j, "Country"+j, "City"+j, "Street"+j, i});
@@ -99,7 +97,7 @@ public class PerformanceTest {
 		}
 	}
 
-	private void addAddressEntities(List<Object[]> resultset, int n) {
+	private void createAddressResultset(List<Object[]> resultset, int n) {
 		for (int i=0; i<n; i++)
 			resultset.add(new Object[]{i, "country"+i, "city"+i, "street"+i, null});
 	}

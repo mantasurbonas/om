@@ -16,17 +16,20 @@ public class EntityMetadata<E> {
 	private String entityName;
 		
 	// one special annotation - for ID field, specifically
-	private FieldMetadata idField;
+	private ColumnFieldMetadata idField;
 
 	// how many recordset column does this entity occupy.
 	// (NULL if it is impossible to determine precisely - i.e. if subentities contain endless recursions) 
 	private Integer width = null;
+
+	// the fields that exist in the resultset but must be ignored when reading or persisting.
+	private LinkedList<IgnoreFieldMetadata> ignoreFields = new LinkedList<IgnoreFieldMetadata>();
 	
 	// the "simple" columns like date, string or integers
-	private LinkedList<FieldMetadata> primitiveFields = new LinkedList<FieldMetadata>();
+	private LinkedList<ColumnFieldMetadata> primitiveFields = new LinkedList<ColumnFieldMetadata>();
 	
 	// the 1-to-1 (master to detail) relationships 
-	private LinkedList<FieldMetadata> pojoFields = new LinkedList<FieldMetadata>();
+	private LinkedList<PojoFieldMetadata> pojoFields = new LinkedList<PojoFieldMetadata>();
 	
 	// the 1-to-many (master to collection of details) relationships
 	private LinkedList<DetailCollectionFieldMetadata> pojoCollectionFields = new LinkedList<DetailCollectionFieldMetadata>();
@@ -35,7 +38,7 @@ public class EntityMetadata<E> {
 	private LinkedList<MasterRefFieldMetadata> masterRefFields = new LinkedList<MasterRefFieldMetadata>();
 
 
-	public EntityMetadata(Class<E> entityClass, final String entityName, FieldMetadata idField) {
+	public EntityMetadata(Class<E> entityClass, final String entityName, ColumnFieldMetadata idField) {
 		this.entityClass = entityClass;
 		this.entityName = entityName;		
 		this.idField = idField;
@@ -49,7 +52,7 @@ public class EntityMetadata<E> {
 		return entityName;
 	}
 
-	public FieldMetadata getIdField(){
+	public ColumnFieldMetadata getIdField(){
 		return idField;
 	}
 
@@ -61,15 +64,11 @@ public class EntityMetadata<E> {
 		return width;
 	}
 
-	public LinkedList<FieldMetadata> getPrimitiveFields() {
+	public LinkedList<ColumnFieldMetadata> getPrimitiveFields() {
 		return primitiveFields;
 	}
 
-	public void setPrimitiveFields(LinkedList<FieldMetadata> primitiveFields) {
-		this.primitiveFields = primitiveFields;
-	}
-
-	public LinkedList<FieldMetadata> getPojoFields() {
+	public LinkedList<PojoFieldMetadata> getPojoFields() {
 		return pojoFields;
 	}
 
@@ -81,11 +80,11 @@ public class EntityMetadata<E> {
 		return masterRefFields;
 	}
 
-	public void addPrimitiveField(FieldMetadata fieldMetadata){
+	public void addPrimitiveField(ColumnFieldMetadata fieldMetadata){
 		primitiveFields.add(fieldMetadata);
 	}
 	
-	public void addPojoField(FieldMetadata fieldMetadata){
+	public void addPojoField(PojoFieldMetadata fieldMetadata){
 		pojoFields.add(fieldMetadata);
 	}
 	
@@ -95,6 +94,10 @@ public class EntityMetadata<E> {
 	
 	public void addMasterRefField(MasterRefFieldMetadata field){
 		masterRefFields.add(field);
+	}
+
+	public void addIgnoreField(IgnoreFieldMetadata field) {
+		ignoreFields.add(field);
 	}
 	
 }

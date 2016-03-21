@@ -1,32 +1,31 @@
 package gugit.om.metadata;
 
+import java.lang.reflect.Field;
+
 
 public class FieldMetadata {
 
-	// a name of a POJO field - just as specified by the developer
+	// a name of a field - just as specified by the developer
 	private String name;
 
-	// a label used when persisting
-	private String columnName;
-		
-	// field position relative to ID field, which is at position zero
-	private int columnOffset;
+	// type of a field
+	private Class<?> type;
 	
-	public FieldMetadata(final String name, final String columnName, int columnOffset){
-		this.name = name;
-		this.columnName = columnName;
-		this.columnOffset = columnOffset;
+	public FieldMetadata(Field field){
+		this.name = field.getName();
+		this.type = field.getType();
 	}
 		
 	public String getName(){
 		return name;
 	}
 
-	public String getColumnName() {
-		return columnName;
+	public Class<?> getType(){
+		return type;
 	}
 
-	public int getColumnOffset() {
-		return columnOffset;
+	protected void setType(Class<?> type) {
+		this.type = type;
 	}
+	
 }

@@ -1,10 +1,10 @@
 package gugit.om;
 
 import gugit.om.mapping.ISerializer;
+import gugit.om.mapping.ISerializerRegistry;
 import gugit.om.mapping.ReadContext;
 import gugit.om.mapping.WriteBatch;
 import gugit.om.mapping.WriteContext;
-import gugit.om.metadata.EntityMetadataService;
 import gugit.om.utils.ArrayIterator;
 import gugit.om.utils.IDataIterator;
 
@@ -20,18 +20,18 @@ import java.util.List;
  * 
  * @author urbonman
  */
-public class OM <E>{
+public class OM{
 	
-	protected ISerializer<E> entitySerializer;
-
 	protected ReadContext readContext;
-	private WriteContext writeContext;
+	protected WriteContext writeContext;
+
+	protected ISerializerRegistry serializers;
 	
-	public OM(EntityMetadataService metadataService, Class<E> entityClass) {
-		entitySerializer = metadataService.getSerializerFor(entityClass);
+	public OM(ISerializerRegistry serializers) {
+		this.serializers = serializers;
 		
-		readContext = new ReadContext(metadataService);
-		writeContext = new WriteContext(metadataService);
+		readContext = new ReadContext(serializers);
+		writeContext = new WriteContext(serializers);
 	}
 	
 	/***
@@ -41,42 +41,57 @@ public class OM <E>{
 		readContext.clear();
 	}
 
-	public WriteBatch writeEntity(E entity){
+	public <E> WriteBatch writeEntity(E entity){
 		WriteBatch result = new WriteBatch();
 		writeEntity(entity, result);
 		return result;
 	}
 	
-	public void writeEntity(E entity, WriteBatch batch){
-		entitySerializer.write(entity, batch, writeContext);
+	public <E> void writeEntity(E entity, WriteBatch batch){
+		@SuppressWarnings("unchecked")
+		ISerializer<E> serializer = (ISerializer<E>)serializers.getSerializerFor(entity.getClass());
+		serializer.write(entity, batch, writeContext);
 	}
 	
-	public WriteBatch writeEntities(Collection<E> entities){
+	public <E> WriteBatch writeEntities(Collection<E> entities){
 		WriteBatch result = new WriteBatch();
+		writeEntities(entities, result);
+		return result;
+	}
+	
+	public <E> void writeEntities(Collection<E> entities, WriteBatch writeBatch){
+		if (entities.isEmpty())
+			return;
+		
+		@SuppressWarnings("unchecked")
+		ISerializer<E> serializer = (ISerializer<E>)serializers.getSerializerFor(entities.iterator().next().getClass());
+
 		for (E entity: entities)
-			writeEntity(entity, result);
-		return result;		
+			serializer.write(entity, writeBatch, writeContext);	
 	}
 	
-	public E readEntity(Object[] array){
-		return readEntity(new ArrayIterator<Object>(array));
+	public <E> E readEntity(Object[] array, Class<E> entityClass){
+		return readEntity(new ArrayIterator<Object>(array), entityClass);
 	}
 	
-	public E readEntity(IDataIterator<Object> array){
-		return (E)entitySerializer.read(array, 0, readContext);
+	public <E> E readEntity(IDataIterator<Object> array, Class<E> entityClass){
+		ISerializer<E> serializer = (ISerializer<E>)serializers.getSerializerFor(entityClass);
+		return serializer.read(array, 0, readContext);
 	}
 	
-	public LinkedList<E> readEntities(List<Object []> dataRows){
+	public <E> List<E> readEntities(List<Object []> dataRows, Class<E> entityClass){
 		reset();
 		
 		LinkedList<E> result = new LinkedList<E>();
-
+		ISerializer<E> serializer = (ISerializer<E>)serializers.getSerializerFor(entityClass);
+		
 		ArrayIterator<Object> row = new ArrayIterator<Object>();
+		
 		E previousEntity = null;
 		for (Object[] array: dataRows){
 			row.setData(array); // reusing iterator object
 			
-			E entity = readEntity(row);
+			E entity = serializer.read(row, 0, readContext);
 			if (entity != previousEntity){
 				result.add(entity);
 				previousEntity = entity;

@@ -1,5 +1,7 @@
 package gugit.om.metadata;
 
+import java.lang.reflect.Field;
+
 /***
  * Defines a field that exists in the resultset 
  * 	but which holds no business information.
@@ -10,7 +12,14 @@ package gugit.om.metadata;
  */
 public class IgnoreFieldMetadata extends FieldMetadata {
 	
-	public IgnoreFieldMetadata(int offset) {
-		super("-=<ignored>=-", "-=<ignored>=-", offset);
+	private int offset;
+
+	public IgnoreFieldMetadata(Field field, int offset) {
+		super(field);
+		this.offset = offset;
+	}
+	
+	public int getOffset(){
+		return offset;
 	}
 }

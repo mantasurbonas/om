@@ -1,14 +1,16 @@
 package gugit.om.metadata;
 
-public class MasterRefFieldMetadata extends FieldMetadata{
+import java.lang.reflect.Field;
+
+public class MasterRefFieldMetadata extends ColumnFieldMetadata{
 
 	private String masterIDName;
 
-	public MasterRefFieldMetadata(final String fieldName, 
+	public MasterRefFieldMetadata(Field field, 
 									final String masterIDName, 
 									final String columnName, 
 									int columnOffset) {
-		super(fieldName, columnName, columnOffset);
+		super(field, columnName, columnOffset);
 		this.masterIDName = masterIDName;
 	}
 

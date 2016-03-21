@@ -1,9 +1,11 @@
 package gugit.om.mapping;
 
+import gugit.om.metadata.ColumnFieldMetadata;
 import gugit.om.metadata.DetailCollectionFieldMetadata;
 import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.FieldMetadata;
 import gugit.om.metadata.MasterRefFieldMetadata;
+import gugit.om.metadata.PojoFieldMetadata;
 import gugit.om.utils.StringTemplate;
 
 import java.util.List;
@@ -179,10 +181,6 @@ public class SerializerCompiler {
 	
 	private ClassPool pool;
 
-	// temp
-	// TODO: refactor to parameter
-	private CtClass ctEntityClass;
-
 	public SerializerCompiler(){		
 		this.pool = ClassPool.getDefault();
 		this.pool.importPackage("gugit.om.mapping");
@@ -200,13 +198,17 @@ public class SerializerCompiler {
 
 	@SuppressWarnings("unchecked")
 	public <T> Class<ISerializer<T>> makeSerializerClass(EntityMetadata<T> entityMetadata) throws Exception {
-
 		String entityClassName = entityMetadata.getEntityClass().getCanonicalName();
 		
-		CtClass resultClass = pool.makeClass(getGeneratedClassName(entityClassName));		
-		resultClass.addInterface( pool.get("gugit.om.mapping.ISerializer") );
+		String generatedClassName = getGeneratedClassName(entityClassName);
 		
-		this.ctEntityClass = pool.get(entityClassName);
+		CtClass resultClass = pool.getOrNull(generatedClassName);
+		if (resultClass != null)
+			return (Class<ISerializer<T>>)Class.forName(generatedClassName);
+		
+		resultClass = pool.makeClass(generatedClassName);
+		
+		resultClass.addInterface( pool.get("gugit.om.mapping.ISerializer") );
 
 		createIDAccessClass(entityMetadata.getEntityClass(), entityMetadata.getIdField());
 		createIdAccessField(entityMetadata.getEntityClass(), resultClass);
@@ -233,7 +235,7 @@ public class SerializerCompiler {
 						.replace("ID_COL_OFFSET", ""+entityMetadata.getIdField().getColumnOffset())
 						.replace("ENTITY_CLASS_NAME", entityMetadata.getEntityClass().getCanonicalName())
 						.replace("ID_SETTER_METHOD", capitalize(entityMetadata.getIdField().getName()))
-						.replace("ID_TYPE", getSetterParamType(entityMetadata.getIdField().getName()))
+						.replace("ID_TYPE", entityMetadata.getIdField().getType().getCanonicalName())
 						.replace("FIELDS_MAPPING_SNIPPLET", createFieldsMappingSrc(entityMetadata.getPrimitiveFields(), entityMetadata.getPojoFields()))
 						.replace("DETAILS_COLLECTION_MAPPING_SNIPPLET", createDetailsCollectionMappingSrc(entityMetadata.getPojoCollectionFields()))
 						.replace("MASTER_SETTING_SNIPPLET", createMasterSettingSnipplet(entityMetadata.getMasterRefFields()))
@@ -244,14 +246,14 @@ public class SerializerCompiler {
 						.getResult();
 	}
 
-	private String createFieldsMappingSrc(List<FieldMetadata> simpleFieldSetters, List<FieldMetadata> details)throws Exception {
+	private String createFieldsMappingSrc(List<ColumnFieldMetadata> simpleFieldSetters, List<PojoFieldMetadata> details)throws Exception {
 		
 		StringBuilder src = new StringBuilder();
 		
-		for (FieldMetadata field: simpleFieldSetters)
+		for (ColumnFieldMetadata field: simpleFieldSetters)
 			src.append(createSimpleFieldSetterSrc(field));
 
-		for (FieldMetadata field: details)
+		for (PojoFieldMetadata field: details)
 			src.append(createOneToOneDetailsSrc(field));
 		
 		return src.toString();
@@ -270,32 +272,32 @@ public class SerializerCompiler {
 	private String createMasterSettingSnipplet(List<MasterRefFieldMetadata> masterFields) throws NotFoundException{
 		StringBuilder src = new StringBuilder();
 		
-		for (FieldMetadata field: masterFields)
+		for (MasterRefFieldMetadata field: masterFields)
 			src.append(createMasterFieldSrc(field));
 		
 		return src.toString();
 	}
 	
-	private String createMasterFieldSrc(FieldMetadata field) throws NotFoundException {
+	private String createMasterFieldSrc(MasterRefFieldMetadata field) throws NotFoundException {
 		return new StringTemplate(SET_MASTER_SNIPPLET_TEMPLATE)
 							.replace("COL_OFFSET", ""+field.getColumnOffset())
-							.replace("MASTER_TYPE", getSetterParamType(field.getName()))
+							.replace("MASTER_TYPE", field.getType().getCanonicalName())
 							.replace("MASTER_FIELD", capitalize(field.getName()))
 							.getResult();
 	}
 
-	private String createSimpleFieldSetterSrc(FieldMetadata fieldInfo) throws NotFoundException {		
+	private String createSimpleFieldSetterSrc(ColumnFieldMetadata fieldInfo) throws NotFoundException {		
 		return new StringTemplate(SIMPLE_FIELD_MAPPING_SNIPPLET_TEMPLATE)
 							.replace("FIELD_NAME", capitalize(fieldInfo.getName()))
-							.replace("FIELD_TYPE", getSetterParamType(fieldInfo.getName()) )
+							.replace("FIELD_TYPE", fieldInfo.getType().getCanonicalName() )
 							.replace("FIELD_COL_OFFSET", ""+fieldInfo.getColumnOffset())
 							.getResult();
 	}
 
-	private String createOneToOneDetailsSrc(FieldMetadata fieldInfo) throws NotFoundException {
+	private String createOneToOneDetailsSrc(PojoFieldMetadata fieldInfo) throws NotFoundException {
 		return new StringTemplate(POJO_FIELD_MAPPING_SNIPPLET_TEMPLATE)
 							.replace("FIELD_NAME", capitalize(fieldInfo.getName()))
-							.replace("DETAIL_TYPE", getSetterParamType(fieldInfo.getName()) )
+							.replace("DETAIL_TYPE", fieldInfo.getType().getCanonicalName() )
 							.replace("POJO_START_OFFSET", ""+fieldInfo.getColumnOffset())
 							.getResult();
 	}
@@ -303,7 +305,7 @@ public class SerializerCompiler {
 	private String createAddDetailSnipplet(DetailCollectionFieldMetadata fieldInfo) {
 		return new StringTemplate(ADD_DETAIL_TO_COLLECTION_SNIPPLET_TEMPLATE)
 							.replace("FIELD_NAME", capitalize(fieldInfo.getName()))
-							.replace("DETAIL_TYPE", fieldInfo.getDetailType().getCanonicalName())
+							.replace("DETAIL_TYPE", fieldInfo.getType().getCanonicalName())
 							.replace("POJO_START_OFFSET", ""+fieldInfo.getColumnOffset())
 							.getResult();
 	}
@@ -385,7 +387,7 @@ public class SerializerCompiler {
 		return new StringTemplate(PROP_ACCESS_GET_VALUE)
 					.replace("ENTITY_TYPE", entityClassName)
 					.replace("ID_FIELD_NAME", capitalize(idField.getName()))
-					.replace("ID_FIELD_TYPE", getSetterParamType(idField.getName()))
+					.replace("ID_FIELD_TYPE", idField.getType().getCanonicalName())
 					.dump(false)
 					.getResult();	
 	}
@@ -394,15 +396,15 @@ public class SerializerCompiler {
 		return new StringTemplate(PROP_ACCESS_SET_VALUE)
 					.replace("ENTITY_TYPE", entityClassName)
 					.replace("ID_FIELD_NAME", capitalize(idField.getName()))
-					.replace("ID_FIELD_TYPE", getSetterParamType(idField.getName()))
+					.replace("ID_FIELD_TYPE", idField.getType().getCanonicalName())
 					.dump(false)
 					.getResult();
 	}
 
-	private String createPrimPropsSnipplet(List<FieldMetadata> primitiveFields) {
+	private String createPrimPropsSnipplet(List<ColumnFieldMetadata> primitiveFields) {
 		StringBuilder src = new StringBuilder();
 		
-		for (FieldMetadata fieldInfo: primitiveFields)
+		for (ColumnFieldMetadata fieldInfo: primitiveFields)
 			src.append(new StringTemplate(WRITE_PRIMITIVE_PROPERTY_SNIPPLET)
 							.replace("COLUMN_NAME", escape(fieldInfo.getColumnName()))
 							.replace("PROPERTY_NAME", capitalize(fieldInfo.getName()))
@@ -411,12 +413,12 @@ public class SerializerCompiler {
 		return src.toString();
 	}
 
-	private String createPojoPropsSnipplet(List<FieldMetadata> pojoFields) throws NotFoundException {
+	private String createPojoPropsSnipplet(List<PojoFieldMetadata> pojoFields) throws NotFoundException {
 		StringBuilder src = new StringBuilder();
-		for (FieldMetadata fieldInfo: pojoFields)
+		for (PojoFieldMetadata fieldInfo: pojoFields)
 			src.append(new StringTemplate(WRITE_POJO_PROPERTY_SNIPPLET)
 							.replace("PROPERTY_NAME", capitalize(fieldInfo.getName()))
-							.replace("POJO_TYPE", getSetterParamType(fieldInfo.getName()))
+							.replace("POJO_TYPE", fieldInfo.getType().getCanonicalName())
 							.getResult());
 		return src.toString();
 	}
@@ -426,7 +428,7 @@ public class SerializerCompiler {
 		for (DetailCollectionFieldMetadata fieldInfo: pojoCollectionFields)
 			src.append(new StringTemplate(WRITE_POJO_COLLECTION_SNIPPLET)
 							.replace("PROPERTY_NAME", capitalize(fieldInfo.getName()))
-							.replace("POJO_TYPE", fieldInfo.getDetailType().getCanonicalName())
+							.replace("POJO_TYPE", fieldInfo.getType().getCanonicalName())
 							.getResult());
 		return src.toString();	
 	}
@@ -437,13 +439,18 @@ public class SerializerCompiler {
 			src.append(new StringTemplate(WRITE_MASTER_DEPENDENCY_SNIPPLET)
 							.replace("MASTER_ACCESSOR_NAME", capitalize(fieldInfo.getName()))
 							.replace("COLUMN_NAME", escape(fieldInfo.getColumnName()))
-							.replace("MASTER_CLASS", getSetterParamType(fieldInfo.getName()))
+							.replace("MASTER_CLASS", fieldInfo.getType().getCanonicalName())
 							.replace("MASTER_PROPERTY_NAME", capitalize(fieldInfo.getMasterIDName()))
 							.replace("DEPENDENCY_VAR_NAME", getMasterDependencyVarName(fieldInfo))
 							.getResult());
 		return src.toString();	
 	}
 
+
+	private String getGeneratedClassName(String entityClassName) {
+		return entityClassName+"$$GugitSerializer";
+	}
+	
 	private String getMasterDependencyVarName(MasterRefFieldMetadata masterRef) {
 		return "$dependency_to_"
 					+masterRef.getName()
@@ -468,17 +475,4 @@ public class SerializerCompiler {
 	private static String escape(final String str){
 		return str.replace("\"", "\\\"");//.replace("\\", "\\\\");
 	}
-	
-	private String getSetterParamType(final String fieldName) throws NotFoundException {
-		String setterName = "set"+capitalize(fieldName);
-		return ctEntityClass
-				.getDeclaredMethod(setterName)
-				.getParameterTypes()[0]
-				.getName();
-	}
-
-	private String getGeneratedClassName(String entityClassName) {
-		return entityClassName+"$$GugitSerializer";
-	}
-	
 }
