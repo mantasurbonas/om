@@ -1,24 +1,24 @@
 package gugit.om.test.model;
 
 import gugit.om.annotations.Column;
-import gugit.om.annotations.DetailEntity;
+import gugit.om.annotations.Pojo;
 import gugit.om.annotations.Entity;
 import gugit.om.annotations.ID;
-import gugit.om.annotations.MasterEntity;
+import gugit.om.annotations.MasterRef;
 
 @Entity(name="RECURSIVE")
 public class Recursive{
 	@ID(name="ID")
-	public Integer id;
+	private Integer id;
 	
 	@Column(name="LABEL")
-	public String label;
+	private String label;
 	
-	@MasterEntity(masterProperty="id", myColumn="PARENT_ID")
-	public Recursive parent;
+	@MasterRef(myColumn="PARENT_ID")
+	private Recursive parent;
 	
-	@DetailEntity
-	public Recursive child;
+	@Pojo
+	private Recursive child;
 
 	public Integer getId() {
 		return id;

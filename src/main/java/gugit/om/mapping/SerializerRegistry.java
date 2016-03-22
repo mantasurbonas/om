@@ -1,7 +1,6 @@
 package gugit.om.mapping;
 
-import gugit.om.metadata.EntityMetadata;
-import gugit.om.metadata.EntityMetadataService;
+import gugit.om.metadata.IEntityMetadataFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,19 +13,18 @@ import java.util.Map;
  * @author urbonman
  *
  */
-public class SerializerRegistry implements ISerializerRegistry{
+public class SerializerRegistry implements ISerializerFactory{
 
 	private Map<Class<?>, ISerializer<?>> serializersCache = new HashMap<Class<?>, ISerializer<?>>();
 	
-	private SerializerCompiler serializerCompiler = new SerializerCompiler();
+	private SerializerCompiler serializerCompiler;
 
-	private EntityMetadataService entityMetadataService;
-
-	public void setEntityMetadataService(EntityMetadataService entityMetadataService){
-		this.entityMetadataService = entityMetadataService;
+	public SerializerRegistry(IEntityMetadataFactory metadataFactory){
+		serializerCompiler = new SerializerCompiler(metadataFactory);
 	}
 	
 	@SuppressWarnings("unchecked")
+	@Override
 	public <T> ISerializer<T> getSerializerFor(Class<T> entityClass){
 		
 		if (serializersCache.containsKey(entityClass))
@@ -51,8 +49,7 @@ public class SerializerRegistry implements ISerializerRegistry{
 		if (serializerCompiler.doesSerializerClassExist(entityClass)) {
 			serializerClass = serializerCompiler.getExistingSerializerClass(entityClass);
 		}else{		
-			EntityMetadata<T> metadata = entityMetadataService.getMetadataFor(entityClass);
-			serializerClass = serializerCompiler.makeSerializerClass(metadata);
+			serializerClass = serializerCompiler.makeSerializerClass(entityClass);
 		}
 		
 		return serializerClass.newInstance();

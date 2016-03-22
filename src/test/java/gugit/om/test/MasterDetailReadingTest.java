@@ -34,10 +34,10 @@ public class MasterDetailReadingTest {
 		List<Person> persons = TestUtils.createObjectMapper().readEntities(resultset, Person.class);
 		
 		assertEquals(1, persons.size());
-		assertEquals(14, persons.get(0).id.intValue());
-		assertEquals(123, persons.get(0).currentAddress.id.intValue());
-		assertEquals(0, persons.get(0).previousAddresses.size());
-		assertEquals(persons.get(0), persons.get(0).currentAddress.owner);
+		assertEquals(14, persons.get(0).getId().intValue());
+		assertEquals(123, persons.get(0).getCurrentAddress().getId().intValue());
+		assertEquals(0, persons.get(0).getPreviousAddresses().size());
+		assertEquals(persons.get(0), persons.get(0).getCurrentAddress().getOwner());
 	}
 
 	@Test
@@ -52,11 +52,11 @@ public class MasterDetailReadingTest {
 		List<Person> persons = TestUtils.createObjectMapper().readEntities(resultset, Person.class);
 		
 		assertEquals(2, persons.size());
-		assertEquals(14, persons.get(0).id.intValue());
-		assertNull(persons.get(0).currentAddress);
-		assertEquals(2, persons.get(0).previousAddresses.size());
-		assertEquals(persons.get(0), persons.get(0).previousAddresses.get(0).owner);
+		assertEquals(14, persons.get(0).getId().intValue());
+		assertNull(persons.get(0).getCurrentAddress());
+		assertEquals(2, persons.get(0).getPreviousAddresses().size());
+		assertEquals(persons.get(0), persons.get(0).getPreviousAddresses().get(0).getOwner());
 		
-		assertEquals(3, persons.get(1).previousAddresses.size());		
+		assertEquals(3, persons.get(1).getPreviousAddresses().size());		
 	}
 }

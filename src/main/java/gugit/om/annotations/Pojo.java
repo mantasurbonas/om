@@ -6,17 +6,14 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-/***
- * marks a collection of details - that is, POJOs that point to my ID 
- * 	(as opposed to a "master" - the POJO that some of my property(ies) point to)
- * 
- * 
- * @author urbonman
- *
- */
 @Target(FIELD)
 @Retention(RUNTIME)
-public @interface DetailEntities {
-
-	Class<?> detailClass();
+public @interface Pojo {	
+	
+	/***
+	 * if not empty: 
+	 * specifies a column on my entity to store referenced Pojo's ID
+	 * (same behaviour as masterRef annotation)
+	 */
+	String myColumn() default "";
 }

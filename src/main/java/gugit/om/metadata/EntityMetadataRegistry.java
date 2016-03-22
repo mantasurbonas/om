@@ -2,7 +2,6 @@ package gugit.om.metadata;
 
 import gugit.om.annotations.Entity;
 import gugit.om.annotations.ID;
-import gugit.om.mapping.ISerializerRegistry;
 import gugit.om.utils.ArrayIterator;
 import gugit.om.utils.IDataIterator;
 
@@ -19,14 +18,9 @@ import java.util.Set;
  * @author urbonman
  *
  */
-public class EntityMetadataService {
+public class EntityMetadataRegistry implements IEntityMetadataFactory{
 	
 	private Map<Class<?>, EntityMetadata<?>> metadataCache = new HashMap<Class<?>, EntityMetadata<?>>();
-	private ISerializerRegistry serializerRegistry;
-		
-	public void setSerializerRegistry(ISerializerRegistry serializers){
-		this.serializerRegistry = serializers;
-	}
 	
 	@SuppressWarnings("unchecked")
 	public <T> EntityMetadata<T> getMetadataFor(Class<T> entityClass){
@@ -34,7 +28,7 @@ public class EntityMetadataService {
 		if (metadataCache.containsKey(entityClass))
 			return (EntityMetadata<T>) metadataCache.get(entityClass);
 		
-		IDataIterator<Field> fields = new ArrayIterator<Field>(entityClass.getFields());
+		IDataIterator<Field> fields = new ArrayIterator<Field>(entityClass.getDeclaredFields());
 
 		EntityMetadata<T> entityMetadata = createMetadataInstance(entityClass, fields);	
 		metadataCache.put(entityClass, entityMetadata);
@@ -45,13 +39,16 @@ public class EntityMetadataService {
 			metadataCache.remove(entityClass);
 			throw e;
 		}
-	
-		serializerRegistry.getSerializerFor(entityClass);
+		
+		onMetadataCreated(entityMetadata);
 		
 		return entityMetadata;
 	}
 
-	private <T> EntityMetadata<T> createMetadataInstance(Class<T> entityClass, IDataIterator<Field> fields) {
+	protected void onMetadataCreated(EntityMetadata<?> em){
+	}
+	
+	protected <T> EntityMetadata<T> createMetadataInstance(Class<T> entityClass, IDataIterator<Field> fields) {
 		Field idField = findID(fields);
 		ColumnFieldMetadata idMetadata = createIDMetadata(idField, fields.getPosition());		
 		fields.next();
@@ -61,7 +58,7 @@ public class EntityMetadataService {
 									idMetadata);
 	}
 
-	private <T> void addFieldsToMetadata(EntityMetadata<T> entityMetadata, IDataIterator<Field> fields) {
+	protected <T> void addFieldsToMetadata(EntityMetadata<T> entityMetadata, IDataIterator<Field> fields) {
 		
 		Set<Class<?>> relatedTypes = new HashSet<Class<?>>();
 		
@@ -87,15 +84,16 @@ public class EntityMetadataService {
 				columnOffset += 1;
 			}else
 			if (annotations.isMasterEntity()){
-				entityMetadata.addMasterRefField( new MasterRefFieldMetadata(field, 
-																			annotations.getMasterPropertyName(), 
+				entityMetadata.addMasterRefField( new ColumnFieldMetadata(field, 
 																			annotations.getMasterMyColumnName(),
 																			columnOffset));
 				columnOffset += 1;
 				relatedTypes.add(field.getType());
 			}else
 			if (annotations.isDetailEntity()){
-				PojoFieldMetadata fieldMeta = new PojoFieldMetadata(field, columnOffset);
+				ColumnFieldMetadata fieldMeta = new ColumnFieldMetadata(field,
+																		annotations.getDetailMyColumnName(),
+																		columnOffset);
 				entityMetadata.addPojoField( fieldMeta );
 				
 				EntityMetadata<?> pojoMetadata = getMetadataFor(field.getType());
@@ -117,12 +115,7 @@ public class EntityMetadataService {
 					columnOffset = null;
 				else
 					columnOffset += width;
-			}/*else
-			if (annotations.isManyToMany()){
-				Class<?> fieldEntityType = annotations.getManyToManyFieldType();
-				EntityMetadata<?> fieldMetadata = createMetadata(fieldEntityType);
-				entityMetadata.addFieldMapping(new OLD__ManyToManyFieldMapping(field, fieldMetadata));
-			}*/
+			}
 			else
 				throw new RuntimeException("could not recognize annotation");
 		}

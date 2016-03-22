@@ -6,12 +6,9 @@ import static org.junit.Assert.assertNull;
 import gugit.om.mapping.NullWriteValue;
 import gugit.om.mapping.WriteBatch;
 import gugit.om.mapping.WritePacket;
-import gugit.om.mapping.WritePacketElement;
 import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
 import gugit.om.test.utils.TestUtils;
-
-import java.util.List;
 
 import org.junit.Test;
 
@@ -25,7 +22,8 @@ public class MasterDetailWritingTest {
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(person);
 		
 		WritePacket insertData = batch.getNext();
-		assertEquals(person.getName(), getValueByName(insertData.getElements(), "NAME"));
+		assertEquals(person.getName(), insertData.getByColumnName("NAME").value);
+		assertEquals(NullWriteValue.getInstance(), insertData.getByColumnName("CURRENT_ADDRESS_ID").value);
 		
 		insertData = batch.getNext();
 		assertNull(insertData);
@@ -39,8 +37,9 @@ public class MasterDetailWritingTest {
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(person);
 		
 		WritePacket updateData = batch.getNext();
-		assertEquals(NullWriteValue.getInstance(), getValueByName(updateData.getElements(), "NAME"));
+		assertEquals(NullWriteValue.getInstance(), updateData.getByColumnName("NAME").value);
 		assertEquals(person.getId(), updateData.getIdElement().value);
+		assertEquals(NullWriteValue.getInstance(), updateData.getByColumnName("CURRENT_ADDRESS_ID").value);
 		
 		updateData = batch.getNext();
 		assertNull(updateData);
@@ -56,16 +55,16 @@ public class MasterDetailWritingTest {
 			address.setCountry("Antarctica");
 			address.setOwner(person);
 			
-		person.setCurrentAddress(address);
+		person.getPreviousAddresses().add(address);
 		
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(person);
 		
 		WritePacket insertData = batch.getNext();
-		assertEquals(insertData.getEntity(), person); // person must be persisted before person so that it could use person's ID 
+		assertEquals(insertData.getEntity(), person); // person gets inserted first but both entities have all they needs.  
 		
 		insertData = batch.getNext();
 		assertEquals(insertData.getEntity(), address); //
-		assertEquals(address.getOwner().getId(), getValueByName(insertData.getElements(), "\"OWNER_ID\""));
+		assertEquals(address.getOwner().getId(), insertData.getByColumnName("\"OWNER_ID\"").value);
 		
 		insertData = batch.getNext();
 		assertNull(insertData);
@@ -78,8 +77,7 @@ public class MasterDetailWritingTest {
 			person.setName("John Smith");
 		
 		Address address1 = makeAddress("Willis st 72");
-			address1.setId(5);
-			address1.setOwner(person);
+			address1.setOwner(null);
 			person.setCurrentAddress(address1);
 		
 		Address address2 = makeAddress("Mulgrave st 24");
@@ -96,17 +94,21 @@ public class MasterDetailWritingTest {
 				
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(address4);
 		
-		WritePacket personWrite = batch.getNext();
-		assertEquals(person, personWrite.getEntity());
+		WritePacket firstWrite = batch.getNext();
+		assertEquals(address1, firstWrite.getEntity());
 		
-		personWrite.updateIDValue(77);
+		firstWrite.updateIDValue(99);
+		assertEquals(99, address1.getId().intValue());
+		
+		WritePacket secondWrite = batch.getNext();
+		assertEquals(person, secondWrite.getEntity());
+		secondWrite.updateIDValue(77);
+		
 		assertEquals(77, person.getId().intValue());
 		
-		WritePacket addressWrite = batch.getNext();
-		assertEquals(Address.class, addressWrite.getEntity().getClass());
-		assertEquals(77, getValueByName(addressWrite.getElements(), "\"OWNER_ID\""));
-		
-		assertNotNull(batch.getNext());
+		WritePacket thirdWrite = batch.getNext();
+		assertNotNull(thirdWrite);
+		assertEquals(77, thirdWrite.getByColumnName("\"OWNER_ID\"").value);
 		
 		assertNotNull(batch.getNext());
 		
@@ -123,11 +125,4 @@ public class MasterDetailWritingTest {
 		return rez;
 	}	
 	
-	private Object getValueByName(List<WritePacketElement> writePackElements, final String columnName) {
-		for (WritePacketElement e: writePackElements)
-			if (e.columnName.equalsIgnoreCase(columnName))
-				return e.value;
-		return null;
-	}
-
 }

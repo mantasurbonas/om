@@ -1,11 +1,11 @@
 package gugit.om.metadata;
 
 import gugit.om.annotations.Column;
-import gugit.om.annotations.DetailEntities;
-import gugit.om.annotations.DetailEntity;
+import gugit.om.annotations.Pojos;
+import gugit.om.annotations.Pojo;
 import gugit.om.annotations.ID;
 import gugit.om.annotations.Ignore;
-import gugit.om.annotations.MasterEntity;
+import gugit.om.annotations.MasterRef;
 import gugit.om.annotations.Transient;
 
 import java.lang.annotation.Annotation;
@@ -31,15 +31,15 @@ public class AnnotationHelper {
 	}
 
 	public boolean isDetailEntity() {
-		return containsClass(DetailEntity.class);
+		return containsClass(Pojo.class);
 	}
 	
 	public boolean isDetailEntities() {
-		return containsClass(DetailEntities.class);
+		return containsClass(Pojos.class);
 	}
 	
 	public boolean isMasterEntity() {
-		return containsClass(MasterEntity.class);
+		return containsClass(MasterRef.class);
 	}
 	
 	public boolean isTransient() {
@@ -51,18 +51,18 @@ public class AnnotationHelper {
 		return colAnnotation.name();
 	}
 
+	public String getDetailMyColumnName(){
+		Pojo annotation = (Pojo) getByClass(Pojo.class);
+		return annotation.myColumn().isEmpty()?null:annotation.myColumn();
+	}
+	
 	public Class<?> getDetailEntitiesType() {
-		DetailEntities annotation = (DetailEntities)getByClass(DetailEntities.class);
+		Pojos annotation = (Pojos)getByClass(Pojos.class);
 		return annotation.detailClass();
 	}
 	
-	public String getMasterPropertyName() {
-		MasterEntity annotation = (MasterEntity) getByClass(MasterEntity.class);
-		return annotation.masterProperty();
-	}
-	
 	public String getMasterMyColumnName(){
-		MasterEntity annotation = (MasterEntity) getByClass(MasterEntity.class);
+		MasterRef annotation = (MasterRef) getByClass(MasterRef.class);
 		return annotation.myColumn();
 	}	
 	

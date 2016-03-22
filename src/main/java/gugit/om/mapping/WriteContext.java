@@ -8,13 +8,13 @@ package gugit.om.mapping;
  */
 public class WriteContext {
 
-	protected ISerializerRegistry serializerRegistry;
+	protected ISerializerFactory serializers;
 
-	public WriteContext(ISerializerRegistry registry){
-		this.serializerRegistry = registry;
+	public WriteContext(ISerializerFactory serializers){
+		this.serializers = serializers;
 	}
 	
 	public <E> IWriter<E> getWriterFor(Class<E> entityClass){
-		return serializerRegistry.getSerializerFor(entityClass);
+		return serializers.getSerializerFor(entityClass);
 	}
 }

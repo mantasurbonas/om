@@ -2,24 +2,24 @@ package gugit.om.test.model;
 
 import gugit.om.annotations.Column;
 import gugit.om.annotations.ID;
-import gugit.om.annotations.MasterEntity;
+import gugit.om.annotations.MasterRef;
 
 public class Address {
 
 	@ID(name="\"ID\"")
-	public Integer id;
+	private Integer id;
 	
 	@Column(name="\"COUNTRY\"")
-	public String country;
+	private String country;
 	
 	@Column(name="CITY")
-	public String city;
+	private String city;
 	
 	@Column(name="STREET")
-	public String street;
+	private String street;
 
-	@MasterEntity(masterProperty="id", myColumn="\"OWNER_ID\"")
-	public Person owner;
+	@MasterRef(myColumn="\"OWNER_ID\"")
+	private Person owner;
 	
 	public Integer getId() {
 		return id;

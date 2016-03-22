@@ -24,6 +24,11 @@ public class WritePacket {
 	private Object entity;
 	
 	/***
+	 * as annotated on the entity
+	 */
+	private String entityName;
+	
+	/***
 	 * the (very specially treated) ID element
 	 */
 	private WritePacketElement idElement;
@@ -47,12 +52,17 @@ public class WritePacket {
 	private IPropertyAccessor idAccessor;
 
 	
-	public WritePacket(Object entity) {
+	public WritePacket(Object entity, final String entityName) {
 		this.entity = entity;
+		this.entityName = entityName;
 	}
 
 	public Object getEntity(){
 		return entity;
+	}
+	
+	public String getEntityName(){
+		return entityName;
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -86,6 +96,8 @@ public class WritePacket {
 		for (WritePacketElement e: elements)
 			if (e.columnName.equalsIgnoreCase(columnName))
 				return e;
+		if (columnName.equalsIgnoreCase(idElement.columnName))
+			return idElement;
 		return null;
 	}
 
@@ -93,6 +105,8 @@ public class WritePacket {
 		for (WritePacketElement e: elements)
 			if (e.fieldName.equalsIgnoreCase(fieldName))
 				return e;
+		if (fieldName.equalsIgnoreCase(idElement.fieldName))
+			return idElement;
 		return null;
 	}
 	

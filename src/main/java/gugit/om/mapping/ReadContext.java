@@ -15,15 +15,15 @@ import java.util.Map;
 public class ReadContext {
 	
 	// needed to read related entities
-	private ISerializerRegistry serializerRegistry;
+	private ISerializerFactory serializers;
 	
 	// read state
 	private FastStack currentlyReadEntities = new FastStack(); 
 	private Map<Integer, Object> previousReads = new HashMap<Integer, Object>();
 	
 	
-	public ReadContext(ISerializerRegistry registry){
-		this.serializerRegistry = registry;
+	public ReadContext(ISerializerFactory serializers){
+		this.serializers = serializers;
 	}
 	
 	public void entityIsBeingRead(Object entity, Object id){
@@ -52,6 +52,6 @@ public class ReadContext {
 	}
 	
 	public <E> IReader<E> getReaderFor(Class<E> entityClass){
-		return serializerRegistry.getSerializerFor(entityClass);
+		return serializers.getSerializerFor(entityClass);
 	}
 }

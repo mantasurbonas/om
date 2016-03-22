@@ -20,8 +20,8 @@ public class SimpleEntityReadingTest {
 
 		SimpleAddress address = TestUtils.createObjectMapper().readEntity(row, SimpleAddress.class);
 		
-		assertEquals("failed deserializing id", 123, address.id.intValue());
-		assertEquals("failed deserializing entity field", address.street, row[3]);
+		assertEquals("failed deserializing id", 123, address.getId().intValue());
+		assertEquals("failed deserializing entity field", address.getStreet(), row[3]);
 		assertNull(address.getPerson());
 	}
 
@@ -34,8 +34,8 @@ public class SimpleEntityReadingTest {
 		List<SimpleAddress> entities = TestUtils.createObjectMapper().readEntities(resultset, SimpleAddress.class);
 		
 		assertEquals(entities.size(), 2);
-		assertEquals(entities.get(0).id.intValue(), 123);
-		assertEquals(entities.get(1).street, "Oakfield av 16/2");
+		assertEquals(entities.get(0).getId().intValue(), 123);
+		assertEquals(entities.get(1).getStreet(), "Oakfield av 16/2");
 		assertNull(entities.get(0).getPerson());
 	}
 	
@@ -49,9 +49,9 @@ public class SimpleEntityReadingTest {
 		List<SimpleAddress> entities = TestUtils.createObjectMapper().readEntities(resultset, SimpleAddress.class);
 
 		assertEquals(2, entities.size());
-		assertEquals(entities.get(0).id.intValue(), 123);
-		assertEquals(entities.get(1).id.intValue(), 456);
-		assertEquals(entities.get(1).street, "Oakfield av 16/2");
+		assertEquals(entities.get(0).getId().intValue(), 123);
+		assertEquals(entities.get(1).getId().intValue(), 456);
+		assertEquals(entities.get(1).getStreet(), "Oakfield av 16/2");
 		assertNull(entities.get(0).getPerson());
 	}
 }

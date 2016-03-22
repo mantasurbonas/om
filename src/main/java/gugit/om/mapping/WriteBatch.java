@@ -1,5 +1,7 @@
 package gugit.om.mapping;
 
+import gugit.om.metadata.IEntityNameProvider;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -17,13 +19,19 @@ public class WriteBatch {
 	private List<WritePacket> writePackets = new LinkedList<WritePacket>();
 	
 	private Set<Object> scheduledEntities = new HashSet<Object>();
+
+	private IEntityNameProvider entityNameProvider;
+	
+	public WriteBatch(IEntityNameProvider entityNameProvider){
+		this.entityNameProvider = entityNameProvider;
+	}
 	
 	public boolean isEntityScheduledAlready(Object entity) {
 		return scheduledEntities.contains(entity);
 	}
 	
 	public WritePacket createWritePacket(Object entity){
-		WritePacket d = new WritePacket(entity);
+		WritePacket d = new WritePacket(entity, entityNameProvider.getEntityName(entity.getClass()));
 		writePackets.add(d);
 		
 		scheduledEntities.add(entity);

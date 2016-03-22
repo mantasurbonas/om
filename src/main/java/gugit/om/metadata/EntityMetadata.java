@@ -1,6 +1,8 @@
 package gugit.om.metadata;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 /***
  * a holder for arbitrary information on a particular object (provided it is annotated with gugit::OM annotations)
@@ -28,14 +30,14 @@ public class EntityMetadata<E> {
 	// the "simple" columns like date, string or integers
 	private LinkedList<ColumnFieldMetadata> primitiveFields = new LinkedList<ColumnFieldMetadata>();
 	
-	// the 1-to-1 (master to detail) relationships 
-	private LinkedList<PojoFieldMetadata> pojoFields = new LinkedList<PojoFieldMetadata>();
+	// the embedded objects. these are embedded into the resultset.
+	private LinkedList<ColumnFieldMetadata> pojoFields = new LinkedList<ColumnFieldMetadata>();
 	
-	// the 1-to-many (master to collection of details) relationships
+	// the embedded objects. These are searched from above the current position in the resultset.
 	private LinkedList<DetailCollectionFieldMetadata> pojoCollectionFields = new LinkedList<DetailCollectionFieldMetadata>();
 	
-	// references to parent (master) entities, if any
-	private LinkedList<MasterRefFieldMetadata> masterRefFields = new LinkedList<MasterRefFieldMetadata>();
+	// references to parent (master) entities. these are searched to the left of the current position in the resultset.
+	private LinkedList<ColumnFieldMetadata> masterRefFields = new LinkedList<ColumnFieldMetadata>();
 
 
 	public EntityMetadata(Class<E> entityClass, final String entityName, ColumnFieldMetadata idField) {
@@ -64,27 +66,38 @@ public class EntityMetadata<E> {
 		return width;
 	}
 
-	public LinkedList<ColumnFieldMetadata> getPrimitiveFields() {
+	public List<ColumnFieldMetadata> getPrimitiveFields() {
 		return primitiveFields;
 	}
 
-	public LinkedList<PojoFieldMetadata> getPojoFields() {
+	public List<ColumnFieldMetadata> getPojoFields() {
 		return pojoFields;
 	}
 
-	public LinkedList<DetailCollectionFieldMetadata> getPojoCollectionFields() {
+	public List<DetailCollectionFieldMetadata> getPojoCollectionFields() {
 		return pojoCollectionFields;
 	}
 
-	public LinkedList<MasterRefFieldMetadata> getMasterRefFields() {
+	public List<ColumnFieldMetadata> getMasterRefFields() {
 		return masterRefFields;
 	}
 
+	public List<ColumnFieldMetadata> getRefFields(){
+		ArrayList<ColumnFieldMetadata> result = new ArrayList<ColumnFieldMetadata>(masterRefFields.size() + pojoFields.size());
+		result.addAll(masterRefFields);
+		
+		for (ColumnFieldMetadata meta: pojoFields)
+			if (meta.getColumnName()!= null)
+				result.add(meta);
+		
+		return result;
+	}
+	
 	public void addPrimitiveField(ColumnFieldMetadata fieldMetadata){
 		primitiveFields.add(fieldMetadata);
 	}
 	
-	public void addPojoField(PojoFieldMetadata fieldMetadata){
+	public void addPojoField(ColumnFieldMetadata fieldMetadata){
 		pojoFields.add(fieldMetadata);
 	}
 	
@@ -92,7 +105,7 @@ public class EntityMetadata<E> {
 		pojoCollectionFields.add(field);
 	}
 	
-	public void addMasterRefField(MasterRefFieldMetadata field){
+	public void addMasterRefField(ColumnFieldMetadata field){
 		masterRefFields.add(field);
 	}
 

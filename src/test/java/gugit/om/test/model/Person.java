@@ -2,8 +2,8 @@ package gugit.om.test.model;
 
 import gugit.om.annotations.Column;
 import gugit.om.annotations.ID;
-import gugit.om.annotations.DetailEntities;
-import gugit.om.annotations.DetailEntity;
+import gugit.om.annotations.Pojos;
+import gugit.om.annotations.Pojo;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -11,16 +11,16 @@ import java.util.List;
 public class Person {
 
 	@ID(name="ID")
-	public Integer id;
+	private Integer id;
 	
 	@Column(name="NAME")
-	public String name;
+	private String name;
 	
-	@DetailEntity
-	public Address currentAddress;
+	@Pojo(myColumn="CURRENT_ADDRESS_ID")
+	private Address currentAddress;
 	
-	@DetailEntities(detailClass=Address.class)
-	public List<Address> previousAddresses = new LinkedList<Address>();
+	@Pojos(detailClass=Address.class)
+	private List<Address> previousAddresses = new LinkedList<Address>();
 
 	public Integer getId() {
 		return id;

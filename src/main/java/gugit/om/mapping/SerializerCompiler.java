@@ -4,8 +4,7 @@ import gugit.om.metadata.ColumnFieldMetadata;
 import gugit.om.metadata.DetailCollectionFieldMetadata;
 import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.FieldMetadata;
-import gugit.om.metadata.MasterRefFieldMetadata;
-import gugit.om.metadata.PojoFieldMetadata;
+import gugit.om.metadata.IEntityMetadataFactory;
 import gugit.om.utils.StringTemplate;
 
 import java.util.List;
@@ -181,7 +180,11 @@ public class SerializerCompiler {
 	
 	private ClassPool pool;
 
-	public SerializerCompiler(){		
+	private IEntityMetadataFactory metadataFactory;
+
+	public SerializerCompiler(IEntityMetadataFactory metadataFactory){
+		this.metadataFactory = metadataFactory;
+		
 		this.pool = ClassPool.getDefault();
 		this.pool.importPackage("gugit.om.mapping");
 		this.pool.importPackage("gugit.om.utils");
@@ -197,8 +200,12 @@ public class SerializerCompiler {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> Class<ISerializer<T>> makeSerializerClass(EntityMetadata<T> entityMetadata) throws Exception {
-		String entityClassName = entityMetadata.getEntityClass().getCanonicalName();
+	public <T> Class<ISerializer<T>> makeSerializerClass(Class<T> entityClass) throws Exception {
+		EntityMetadata<T> entityMetadata = metadataFactory.getMetadataFor(entityClass);
+		
+		String entityClassName = entityClass.getCanonicalName();
+		
+		System.out.println("compiling serializer class for "+entityClassName);
 		
 		String generatedClassName = getGeneratedClassName(entityClassName);
 		
@@ -210,12 +217,13 @@ public class SerializerCompiler {
 		
 		resultClass.addInterface( pool.get("gugit.om.mapping.ISerializer") );
 
-		createIDAccessClass(entityMetadata.getEntityClass(), entityMetadata.getIdField());
-		createIdAccessField(entityMetadata.getEntityClass(), resultClass);
+		createIDAccessClass(entityClass, entityMetadata.getIdField());
+		createIdAccessField(entityClass, resultClass);
 		
-		for (MasterRefFieldMetadata masterInfo: entityMetadata.getMasterRefFields()){
-			createDependencyClass(entityMetadata.getEntityClass(), masterInfo);
-			createDependencyField(entityMetadata.getEntityClass(), resultClass, masterInfo);
+		for (ColumnFieldMetadata masterInfo: entityMetadata.getRefFields()){
+			EntityMetadata<?> masterMeta = metadataFactory.getMetadataFor(masterInfo.getType());
+			createDependencyClass(entityClass, masterMeta, masterInfo);
+			createDependencyField(entityClass, resultClass, masterMeta, masterInfo);
 		}
 		
 		createWriteMethod(entityMetadata, resultClass);
@@ -246,14 +254,14 @@ public class SerializerCompiler {
 						.getResult();
 	}
 
-	private String createFieldsMappingSrc(List<ColumnFieldMetadata> simpleFieldSetters, List<PojoFieldMetadata> details)throws Exception {
+	private String createFieldsMappingSrc(List<ColumnFieldMetadata> simpleFieldSetters, List<ColumnFieldMetadata> details)throws Exception {
 		
 		StringBuilder src = new StringBuilder();
 		
 		for (ColumnFieldMetadata field: simpleFieldSetters)
 			src.append(createSimpleFieldSetterSrc(field));
 
-		for (PojoFieldMetadata field: details)
+		for (ColumnFieldMetadata field: details)
 			src.append(createOneToOneDetailsSrc(field));
 		
 		return src.toString();
@@ -269,16 +277,16 @@ public class SerializerCompiler {
 	}
 
 
-	private String createMasterSettingSnipplet(List<MasterRefFieldMetadata> masterFields) throws NotFoundException{
+	private String createMasterSettingSnipplet(List<ColumnFieldMetadata> masterFields) throws NotFoundException{
 		StringBuilder src = new StringBuilder();
 		
-		for (MasterRefFieldMetadata field: masterFields)
+		for (ColumnFieldMetadata field: masterFields)
 			src.append(createMasterFieldSrc(field));
 		
 		return src.toString();
 	}
 	
-	private String createMasterFieldSrc(MasterRefFieldMetadata field) throws NotFoundException {
+	private String createMasterFieldSrc(ColumnFieldMetadata field) throws NotFoundException {
 		return new StringTemplate(SET_MASTER_SNIPPLET_TEMPLATE)
 							.replace("COL_OFFSET", ""+field.getColumnOffset())
 							.replace("MASTER_TYPE", field.getType().getCanonicalName())
@@ -294,7 +302,7 @@ public class SerializerCompiler {
 							.getResult();
 	}
 
-	private String createOneToOneDetailsSrc(PojoFieldMetadata fieldInfo) throws NotFoundException {
+	private String createOneToOneDetailsSrc(ColumnFieldMetadata fieldInfo) throws NotFoundException {
 		return new StringTemplate(POJO_FIELD_MAPPING_SNIPPLET_TEMPLATE)
 							.replace("FIELD_NAME", capitalize(fieldInfo.getName()))
 							.replace("DETAIL_TYPE", fieldInfo.getType().getCanonicalName() )
@@ -318,7 +326,7 @@ public class SerializerCompiler {
 										.replace("WRITE_PRIMITIVE_PROPERTIES_SNIPPLET", createPrimPropsSnipplet(entityMetadata.getPrimitiveFields()))
 										.replace("WRITE_POJO_PROPERTIES_SNIPPLET", createPojoPropsSnipplet(entityMetadata.getPojoFields()))
 										.replace("WRITE_POJO_COLLECTIONS_SNIPPLET", createPojoColectionsSnipplet(entityMetadata.getPojoCollectionFields()))
-										.replace("WRITE_MASTER_DEPENDENCIES_SNIPPLET", createMasterRefSnipplet(entityMetadata.getMasterRefFields()) )
+										.replace("WRITE_MASTER_DEPENDENCIES_SNIPPLET", createMasterRefSnipplet(entityMetadata.getRefFields()) )
 										.dump(false)
 										.getResult();
 
@@ -334,9 +342,9 @@ public class SerializerCompiler {
 		resultClass.addField(CtField.make(accessFieldSrc, resultClass));
 	}
 
-	private void createDependencyField(Class<?> entityClass, CtClass resultClass, MasterRefFieldMetadata masterRef) throws Exception {
-		String depClassName = getMasterDependencyClassName(entityClass.getCanonicalName(), masterRef);
-		String depVarName = getMasterDependencyVarName(masterRef);
+	private void createDependencyField(Class<?> entityClass, CtClass resultClass, EntityMetadata<?> masterMeta, ColumnFieldMetadata masterRef) throws Exception {
+		String depClassName = getMasterDependencyClassName(entityClass.getCanonicalName(), masterRef.getName(), masterMeta.getIdField().getName());
+		String depVarName = getMasterDependencyVarName(masterRef.getName(), masterMeta.getIdField().getName());
 		
 		String masterRefFieldSrc = new StringTemplate(PARENT_DEPENDENCY_FIELD_TEMPLATE)
 											.replace("DEPENDENCY_VAR_NAME", depVarName)
@@ -346,14 +354,22 @@ public class SerializerCompiler {
 		resultClass.addField(CtField.make(masterRefFieldSrc, resultClass));
 	}
 
-	private void createDependencyClass(Class<?> entityClass, MasterRefFieldMetadata masterInfo) throws Exception{
+	private void createDependencyClass(Class<?> entityClass, EntityMetadata<?> masterEntityMeta, ColumnFieldMetadata masterInfo) throws Exception{
 		String entityClassName = entityClass.getCanonicalName();
 		
-		String dependencyClassName = getMasterDependencyClassName(entityClassName, masterInfo);
+		String masterRefName = masterInfo.getName();
+		String masterId = masterEntityMeta.getIdField().getName();
+		Class<?> masterIdType = masterEntityMeta.getIdField().getType();
+		String dependencyClassName = getMasterDependencyClassName(entityClassName, masterRefName , masterId);
 		
+		String masterRefCol = masterInfo.getColumnName();
 		CtClass depClass = pool.makeClass(dependencyClassName);
 		depClass.addInterface(pool.get("gugit.om.mapping.IDependency"));
-		depClass.addMethod(CtNewMethod.make(createSolveMethodSrc(entityClassName, masterInfo), depClass));
+		depClass.addMethod(CtNewMethod.make(createSolveMethodSrc(entityClassName, 
+																masterRefName, 
+																masterId,
+																masterIdType,
+																masterRefCol), depClass));
 		depClass.toClass();
 	}
 
@@ -372,13 +388,17 @@ public class SerializerCompiler {
 		return entityClass.getCanonicalName()+"$$GUGIT$$IdAccessor";
 	}
 	
-	private String createSolveMethodSrc(String entityClassName, MasterRefFieldMetadata masterRef) throws NotFoundException {
+	private String createSolveMethodSrc(String entityClassName, 
+										String masterRefName, 
+										String masterIdName,
+										Class<?> masterIdType,
+										String masterRefCol) throws NotFoundException {
 		return new StringTemplate(SOLVE_METHOD_TEMPLATE)
-						.replace("MASTER_ACCESSOR_NAME", capitalize(masterRef.getName()))
-						.replace("MASTER_PROPERTY_NAME", capitalize(masterRef.getMasterIDName()))
-						.replace("PROPERTY_TYPE", Integer.class.getCanonicalName()) // this.getSetterParamType(masterRef.getName()))
+						.replace("MASTER_ACCESSOR_NAME", capitalize(masterRefName))
+						.replace("MASTER_PROPERTY_NAME", capitalize(masterIdName))
+						.replace("PROPERTY_TYPE", masterIdType.getCanonicalName())
 						.replace("ENTITY_TYPE", entityClassName)
-						.replace("COLUMN_NAME", escape(masterRef.getColumnName()))
+						.replace("COLUMN_NAME", escape(masterRefCol))
 						.dump(false)
 						.getResult();
 	}
@@ -413,9 +433,9 @@ public class SerializerCompiler {
 		return src.toString();
 	}
 
-	private String createPojoPropsSnipplet(List<PojoFieldMetadata> pojoFields) throws NotFoundException {
+	private String createPojoPropsSnipplet(List<ColumnFieldMetadata> pojoFields) throws NotFoundException {
 		StringBuilder src = new StringBuilder();
-		for (PojoFieldMetadata fieldInfo: pojoFields)
+		for (ColumnFieldMetadata fieldInfo: pojoFields)
 			src.append(new StringTemplate(WRITE_POJO_PROPERTY_SNIPPLET)
 							.replace("PROPERTY_NAME", capitalize(fieldInfo.getName()))
 							.replace("POJO_TYPE", fieldInfo.getType().getCanonicalName())
@@ -433,16 +453,18 @@ public class SerializerCompiler {
 		return src.toString();	
 	}
 
-	private String createMasterRefSnipplet(List<MasterRefFieldMetadata> masterReferenceFields) throws NotFoundException {
+	private String createMasterRefSnipplet(List<ColumnFieldMetadata> masterReferenceFields) throws NotFoundException {
 		StringBuilder src = new StringBuilder();
-		for (MasterRefFieldMetadata fieldInfo: masterReferenceFields)
+		for (ColumnFieldMetadata masterRef: masterReferenceFields){
+			EntityMetadata<?> masterEntityMeta = metadataFactory.getMetadataFor(masterRef.getType());
 			src.append(new StringTemplate(WRITE_MASTER_DEPENDENCY_SNIPPLET)
-							.replace("MASTER_ACCESSOR_NAME", capitalize(fieldInfo.getName()))
-							.replace("COLUMN_NAME", escape(fieldInfo.getColumnName()))
-							.replace("MASTER_CLASS", fieldInfo.getType().getCanonicalName())
-							.replace("MASTER_PROPERTY_NAME", capitalize(fieldInfo.getMasterIDName()))
-							.replace("DEPENDENCY_VAR_NAME", getMasterDependencyVarName(fieldInfo))
+							.replace("MASTER_ACCESSOR_NAME", capitalize(masterRef.getName()))
+							.replace("COLUMN_NAME", escape(masterRef.getColumnName()))
+							.replace("MASTER_CLASS", masterRef.getType().getCanonicalName())
+							.replace("MASTER_PROPERTY_NAME", capitalize(masterEntityMeta.getIdField().getName()))
+							.replace("DEPENDENCY_VAR_NAME", getMasterDependencyVarName(masterRef.getName(), masterEntityMeta.getIdField().getName()))
 							.getResult());
+		}
 		return src.toString();	
 	}
 
@@ -451,19 +473,19 @@ public class SerializerCompiler {
 		return entityClassName+"$$GugitSerializer";
 	}
 	
-	private String getMasterDependencyVarName(MasterRefFieldMetadata masterRef) {
+	private String getMasterDependencyVarName(String masterRefName, String masterEntityId) {
 		return "$dependency_to_"
-					+masterRef.getName()
+					+masterRefName
 					+"_$_"
-					+masterRef.getMasterIDName();
+					+masterEntityId;
 	}
 
-	private String getMasterDependencyClassName(String entityClassName, MasterRefFieldMetadata masterInfo) {
+	private String getMasterDependencyClassName(String entityClassName, String masterRefName, String masterEntityId) {
 		return entityClassName
 					+"$$GUGIT$$"
-					+masterInfo.getName()
-					+"$$"+
-					masterInfo.getMasterIDName()
+					+masterRefName
+					+"$$"
+					+masterEntityId
 					+"Dependency";
 	}
 

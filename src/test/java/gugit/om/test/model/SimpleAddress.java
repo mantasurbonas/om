@@ -5,19 +5,19 @@ import gugit.om.annotations.ID;
 
 public class SimpleAddress{
 	@ID(name="ID")
-	public Integer id;
+	private Integer id;
 	
 	@Column(name="\"COLUMN\"")
-	public String country;
+	private String country;
 	
 	@Column(name="CITY")
-	public String city;
+	private String city;
 	
 	@Column(name="STREET")
-	public String street;
+	private String street;
 	
 	@Column(name="PERSON")
-	public String person;
+	private String person;
 
 	public Integer getId() {
 		return id;

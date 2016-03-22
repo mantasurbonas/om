@@ -8,6 +8,6 @@ import java.lang.annotation.Target;
 
 @Target(FIELD)
 @Retention(RUNTIME)
-public @interface DetailEntity {
-	
+public @interface MasterRef {	
+	String myColumn();
 }
