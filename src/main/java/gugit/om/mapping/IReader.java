@@ -3,7 +3,7 @@ package gugit.om.mapping;
 import gugit.om.utils.IDataIterator;
 
 /***
- * Reads entity E from underlying data.
+ * Reads entity E from underlying data 
  * 
  * Stateless (and thread-safe) - provided the params are thread-specific, of course
  * 
@@ -13,7 +13,7 @@ import gugit.om.utils.IDataIterator;
  * @author urbonman
  */
 public interface IReader<E> {
-
+	
 	E read(IDataIterator<?> iterator, int startPosition, ReadContext context);
 	
 }

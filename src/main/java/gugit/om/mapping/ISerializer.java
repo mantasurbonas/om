@@ -1,6 +1,11 @@
 package gugit.om.mapping;
 
 
-public interface ISerializer <E> extends IReader<E>, IWriter<E>{
-	
+/***
+ * Facade for both Reader, Merger and Writer
+ * 
+ * @author urbonman
+ */
+public interface ISerializer <E> extends IReader<E>, IMerger<E>, IWriter<E>{
+		
 }
