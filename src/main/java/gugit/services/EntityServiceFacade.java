@@ -7,21 +7,28 @@ import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.EntityMetadataRegistry;
 import gugit.om.metadata.IEntityMetadataFactory;
 import gugit.om.metadata.IEntityNameProvider;
+import gugit.om.wrapping.EntityFactoryImpl;
+import gugit.om.wrapping.IEntityFactory;
 
-public class EntityServiceFacade implements IEntityMetadataFactory, 
-									  ISerializerFactory,
-									  IEntityNameProvider{
+public class EntityServiceFacade implements IEntityFactory,
+									  		IEntityMetadataFactory, 
+									  		ISerializerFactory,
+									  		IEntityNameProvider{
 
 	protected EntityMetadataRegistry metadataRegistry;
 	protected SerializerRegistry serializerRegistry;
+	protected EntityFactoryImpl entityFactory;
 	
 	public EntityServiceFacade(){
+		entityFactory = new EntityFactoryImpl();
+		
 		metadataRegistry = new EntityMetadataRegistry(){
 			protected void onMetadataCreated(EntityMetadata<?> em){
 				// ensuring serializers are created for each entity metadata detected
 				serializerRegistry.getSerializerFor(em.getEntityClass());
 			}
 		};
+		
 		serializerRegistry = new SerializerRegistry(metadataRegistry);
 	}
 	
@@ -38,6 +45,11 @@ public class EntityServiceFacade implements IEntityMetadataFactory,
 	@Override
 	public String getEntityName(Class<?> entityClass) {
 		return getMetadataFor(entityClass).getEntityName();
+	}
+
+	@Override
+	public <E> E create(Class<E> entityClass){
+		return entityFactory.create(entityClass);
 	}
 
 }

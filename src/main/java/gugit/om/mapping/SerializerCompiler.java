@@ -51,6 +51,8 @@ public class SerializerCompiler {
 			
 			+ "  %REMOVE_FROM_READ_CONTEXT% \n"
 			
+			+ "  gugit.om.wrapping.EntityMarkingHelper.setDirty(entity, false); \n"
+			
 			+ "}\n";
 	
 	private static final String MERGE_METHOD_CASE_SNIPPLET=
@@ -71,7 +73,7 @@ public class SerializerCompiler {
 			+ "   %ENTITY_CLASS_NAME% entity = (%ENTITY_CLASS_NAME%)readContext.getCachedRead(position); \n"
 			
 			+ "  if (entity == null || !id.equals(entity.get%ID_SETTER_METHOD%())){ \n"
-			+ "     entity = new %ENTITY_CLASS_NAME%();  \n"
+			+ "     entity = (%ENTITY_CLASS_NAME%)readContext.createEntity(%ENTITY_CLASS_NAME%.class);  \n"
 			+ "     entity.set%ID_SETTER_METHOD%( (%ID_TYPE%) id);  \n"
 			
 			+"      %ADD_TO_READ_CONTEXT% \n"
@@ -89,6 +91,8 @@ public class SerializerCompiler {
 			+ "  %MASTER_SETTING_SNIPPLET% \n"
 			
 			+"   %REMOVE_FROM_READ_CONTEXT% \n"
+			
+			+ "  gugit.om.wrapping.EntityMarkingHelper.setDirty(entity, false); \n"
 			
 			+ "  return entity; \n"
 			+ " } \n";
@@ -226,6 +230,7 @@ public class SerializerCompiler {
 		this.pool = ClassPool.getDefault();
 		this.pool.importPackage("gugit.om.mapping");
 		this.pool.importPackage("gugit.om.utils");
+		this.pool.importPackage("gugit.om.wrapping");
 	}
 
 	public boolean doesSerializerClassExist(Class<?> entityClass) {
@@ -243,13 +248,13 @@ public class SerializerCompiler {
 		
 		String entityClassName = entityClass.getCanonicalName();
 		
-		System.out.println("compiling serializer class for "+entityClassName);
-		
 		String generatedClassName = getGeneratedClassName(entityClassName);
 		
 		CtClass resultClass = pool.getOrNull(generatedClassName);
 		if (resultClass != null)
 			return (Class<ISerializer<T>>)Class.forName(generatedClassName);
+		
+		System.out.println("compiling serializer class for "+entityClassName);
 		
 		resultClass = pool.makeClass(generatedClassName);
 		

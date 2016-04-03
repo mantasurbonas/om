@@ -60,7 +60,7 @@ public class OM{
 	}
 		
 	public <E> E readEntity(IDataIterator<Object> array, Class<E> entityClass){
-		return readEntity(array, entityClass, new ReadContext(entityService));
+		return readEntity(array, entityClass, new ReadContext(entityService, entityService));
 	}
 	
 	protected <E> E readEntity(IDataIterator<Object> array, Class<E> entityClass, ReadContext readContext){
@@ -73,7 +73,7 @@ public class OM{
 	}
 
 	public <E> E leftJoin(E entity, final String property, IDataIterator<Object> array){
-		return leftJoin(entity, property, array, new ReadContext(entityService));
+		return leftJoin(entity, property, array, new ReadContext(entityService, entityService));
 	}
 	
 	public <E> E leftJoin(E entity, final String property, IDataIterator<Object> array, ReadContext readContext){
@@ -86,7 +86,7 @@ public class OM{
 	
 	public <E> List<E> readEntities(List<Object []> dataRows, Class<E> entityClass){		
 		ISerializer<E> serializer = (ISerializer<E>)entityService.getSerializerFor(entityClass);
-		ReadContext readContext = new ReadContext(entityService);
+		ReadContext readContext = new ReadContext(entityService, entityService);
 		
 		ArrayIterator<Object> row = new ArrayIterator<Object>();
 		LinkedList<E> result = new LinkedList<E>();		
@@ -115,7 +115,7 @@ public class OM{
 		Iterator<E> it = entities.iterator();
 		E entity = it.next();
 		
-		ReadContext readContext = new ReadContext(entityService);
+		ReadContext readContext = new ReadContext(entityService, entityService);
 		ArrayIterator<Object> row = new ArrayIterator<Object>();
 		for(Object[] array: dataRows){
 			while(!array[0].equals(serializer.getID(entity)))

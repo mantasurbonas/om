@@ -1,6 +1,7 @@
 package gugit.om.mapping;
 
 import gugit.om.metadata.IEntityNameProvider;
+import gugit.om.wrapping.EntityMarkingHelper;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,7 +33,9 @@ public class WriteBatch {
 	
 	public WritePacket createWritePacket(Object entity){
 		WritePacket d = new WritePacket(entity, entityNameProvider.getEntityName(entity.getClass()));
-		writePackets.add(d);
+		
+		if (EntityMarkingHelper.isDirty(entity))
+			writePackets.add(d);
 		
 		scheduledEntities.add(entity);
 		return d;
@@ -47,6 +50,8 @@ public class WriteBatch {
 				continue;
 			
 			i.remove();
+			
+			EntityMarkingHelper.setDirty(writePacket.getEntity(), false);
 			
 			return writePacket;
 		}

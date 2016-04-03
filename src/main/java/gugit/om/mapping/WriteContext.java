@@ -17,4 +17,5 @@ public class WriteContext {
 	public <E> IWriter<E> getWriterFor(Class<E> entityClass){
 		return serializers.getSerializerFor(entityClass);
 	}
+	
 }

@@ -1,9 +1,10 @@
 package gugit.om.mapping;
 
-import gugit.om.metadata.IEntityMetadataFactory;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import gugit.om.metadata.IEntityMetadataFactory;
+import gugit.om.wrapping.EntityMarkingHelper;
 
 /***
  * creates a new serializer or returns a cached one if exists.
@@ -26,6 +27,8 @@ public class SerializerRegistry implements ISerializerFactory{
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> ISerializer<T> getSerializerFor(Class<T> entityClass){
+		
+		entityClass = EntityMarkingHelper.getEntityClass(entityClass);
 		
 		if (serializersCache.containsKey(entityClass))
 			return (ISerializer<T>) serializersCache.get(entityClass);

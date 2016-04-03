@@ -1,9 +1,10 @@
 package gugit.om.mapping;
 
-import gugit.om.utils.FastStack;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import gugit.om.utils.FastStack;
+import gugit.om.wrapping.IEntityFactory;
 
 
 /***
@@ -17,13 +18,17 @@ public class ReadContext {
 	// needed to read related entities
 	private ISerializerFactory serializers;
 	
+	// needed to create new (wrapped) entity instances
+	private IEntityFactory entityFactory;
+	
 	// read state
 	private FastStack currentlyReadEntities = new FastStack(); 
 	private Map<Integer, Object> previousReads = new HashMap<Integer, Object>();
 	
 	
-	public ReadContext(ISerializerFactory serializers){
+	public ReadContext(ISerializerFactory serializers, IEntityFactory factory){
 		this.serializers = serializers;
+		this.entityFactory = factory;
 	}
 	
 	public void entityIsBeingRead(Object entity, Object id){
@@ -53,5 +58,9 @@ public class ReadContext {
 	
 	public <E> IReader<E> getReaderFor(Class<E> entityClass){
 		return serializers.getSerializerFor(entityClass);
+	}
+	
+	public <E> E createEntity(Class<E> entityClass){
+		return entityFactory.create(entityClass);
 	}
 }

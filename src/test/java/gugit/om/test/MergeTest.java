@@ -1,9 +1,15 @@
 package gugit.om.test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.Test;
+
 import gugit.om.OM;
 import gugit.om.mapping.ISerializer;
-import gugit.om.mapping.ISerializerFactory;
 import gugit.om.mapping.ReadContext;
 import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
@@ -11,11 +17,6 @@ import gugit.om.test.model.SimpleAddress;
 import gugit.om.utils.ArrayIterator;
 import gugit.om.utils.IDataIterator;
 import gugit.services.EntityServiceFacade;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.Test;
 
 public class MergeTest {
 
@@ -55,11 +56,11 @@ public class MergeTest {
 		
 			person.setCurrentAddress(currentAddress);
 		
-		ISerializerFactory serializers = new EntityServiceFacade();
+		EntityServiceFacade serviceFacade = new EntityServiceFacade();
 		int propIndex = serializer.getPropertyIndex("currentAddress");
 		IDataIterator<Object> array = new ArrayIterator<Object>(new Object[]
 				{33, 44, "New Zealand", "Nelson", "Elm st 142", 33});
-		serializer.leftJoin(person, propIndex , array , 0, new ReadContext(serializers ));
+		serializer.leftJoin(person, propIndex , array , 0, new ReadContext(serviceFacade, serviceFacade));
 		
 		assertEquals(person.getCurrentAddress().getId().intValue(), 44);
 		assertEquals(person.getCurrentAddress().getCity(), "Nelson");
@@ -74,13 +75,13 @@ public class MergeTest {
 		Person person = new Person();
 			person.setId(33);
 		
-		ISerializerFactory serializers = new EntityServiceFacade();
+		EntityServiceFacade serviceFacade = new EntityServiceFacade();
 		int propIndex = serializer.getPropertyIndex("previousAddresses");
 		
 		ArrayIterator<Object> array = new ArrayIterator<Object>();
 			array.setData(new Object[]{33, 44, "New Zealand", "Nelson", "Elm st 142", 33});
 			
-		ReadContext readContext = new ReadContext(serializers);
+		ReadContext readContext = new ReadContext(serviceFacade, serviceFacade);
 		serializer.leftJoin(person, propIndex , array , 0, readContext);
 		
 		assertEquals(person.getPreviousAddresses().size(), 1);

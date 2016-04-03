@@ -1,15 +1,16 @@
 package gugit.om.metadata;
 
-import gugit.om.annotations.Entity;
-import gugit.om.annotations.ID;
-import gugit.om.utils.ArrayIterator;
-import gugit.om.utils.IDataIterator;
-
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import gugit.om.annotations.Entity;
+import gugit.om.annotations.ID;
+import gugit.om.utils.ArrayIterator;
+import gugit.om.utils.IDataIterator;
+import gugit.om.wrapping.EntityMarkingHelper;
 
 
 /***
@@ -21,9 +22,10 @@ import java.util.Set;
 public class EntityMetadataRegistry implements IEntityMetadataFactory{
 	
 	private Map<Class<?>, EntityMetadata<?>> metadataCache = new HashMap<Class<?>, EntityMetadata<?>>();
-	
+
 	@SuppressWarnings("unchecked")
 	public <T> EntityMetadata<T> getMetadataFor(Class<T> entityClass){
+		entityClass = EntityMarkingHelper.getEntityClass(entityClass);
 		
 		if (metadataCache.containsKey(entityClass))
 			return (EntityMetadata<T>) metadataCache.get(entityClass);
