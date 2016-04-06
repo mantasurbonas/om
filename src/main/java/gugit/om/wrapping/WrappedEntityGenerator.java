@@ -57,7 +57,13 @@ public class WrappedEntityGenerator {
 
 	@SuppressWarnings("unchecked")
 	public <T> Class<? extends T> getExistingWrapperClass(Class<T> entityClass) throws Exception {
-		return (Class<? extends T>) Class.forName(getGeneratedClassName(entityClass.getCanonicalName()));
+		String wrappedClassName = getGeneratedClassName(entityClass.getCanonicalName());
+		try{
+			return (Class<? extends T>) Class.forName(wrappedClassName);
+		}catch(Exception e){
+			System.out.println("failed finding a class "+entityClass+" in classloader, getting it from class pool");
+			return (Class<? extends T>) pool.get( wrappedClassName).toClass(getClass().getClassLoader(), null);
+		}
 	}
 
 	@SuppressWarnings("unchecked")
