@@ -51,7 +51,7 @@ public class WriteBatch {
 			
 			i.remove();
 			
-			EntityMarkingHelper.setDirty(writePacket.getEntity(), false);
+			// EntityMarkingHelper.setDirty(writePacket.getEntity(), false);
 			
 			return writePacket;
 		}

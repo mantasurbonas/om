@@ -10,6 +10,7 @@ import org.junit.Test;
 import gugit.om.OM;
 import gugit.om.mapping.WriteBatch;
 import gugit.om.mapping.WriteContext;
+import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
 import gugit.om.wrapping.EntityFactoryImpl;
 import gugit.om.wrapping.EntityMarkingHelper;
@@ -79,6 +80,62 @@ public class DirtyMarkingTest {
 		
 		assertEquals(batch.getNext().getEntity(), person2);
 		assertNull(batch.getNext());
+		
+		person2.setName("John Dilbert");
+		
+		batch = om.writeEntity(person2);
+		assertEquals(batch.getNext().getEntity(), person2);
+		
+		batch = om.writeEntity(person2);
+		assertNull(batch.getNext());		
+	}
+	
+	@Test
+	public void testWritingCompositeEntities(){
+		EntityServiceFacade service = new EntityServiceFacade();
+
+		Address address = service.create(Address.class);
+		address.setCity("Darwin");
+		
+		Person person = service.create(Person.class);
+		person.setId(789);
+		person.getPreviousAddresses().add(address);
+		address.setOwner(person);
+
+		WriteBatch writeBatch = new WriteBatch(service);
+		WriteContext writeContext = new WriteContext(service);
+		service.getSerializerFor(Person.class).write(person, writeBatch, writeContext);
+		
+		assertEquals(writeBatch.getNext().getEntity(), person);
+		assertEquals(writeBatch.getNext().getEntity(), address);
+		assertNull(writeBatch.getNext());
+		
+		writeBatch = new WriteBatch(service);
+		service.getSerializerFor(Person.class).write(person, writeBatch, writeContext);
+		
+		assertNull(writeBatch.getNext());
+	}
+	
+	@Test
+	public void testMasterRef(){
+		
+		OM om = new OM();
+		EntityServiceFacade service = new EntityServiceFacade();
+		Person person = om.readEntity(new Object[]{14, "John Smith"}, Person.class);
+		assertFalse(EntityMarkingHelper.isDirty(person));
+		
+		Address address = service.create(Address.class);
+		address.setOwner(person);
+		assertTrue(EntityMarkingHelper.isDirty(address));
+		
+		WriteBatch batch = om.writeEntity(person);
+		assertNull(batch.getNext());
+		assertFalse(EntityMarkingHelper.isDirty(person));
+		
+		batch = om.writeEntity(address);
+		assertEquals(batch.getNext().getEntity(), address);
+		Object obj = batch.getNext();
+		assertNull(obj);
 	}
 
 }

@@ -174,6 +174,8 @@ public class SerializerCompiler {
 
 		+ "     %WRITE_MASTER_DEPENDENCIES_SNIPPLET% \n"
 		
+		+ "     gugit.om.wrapping.EntityMarkingHelper.setDirty(entity, false); \n"
+		
 		+ "	}\n";
 
 		private final String PARENT_DEPENDENCY_FIELD_TEMPLATE = 

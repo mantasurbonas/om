@@ -19,7 +19,7 @@ public class WrappedEntityGenerator {
 	private static final String CLEAR_DIRTY_METHOD_SRC = "public void clearDirty(){ $$dirty = false; }";
 
 	private static final String SET_DIRTY_FLAG_METHOD_SRC = "public void setDirty(){ $$dirty = true; }";
-
+		
 	private static final String DIRTY_FLAG_FIELD_SRC = "private boolean $$dirty = true;";
 
 	private static Map<Class<?>, Class<?>> cache = new HashMap<Class<?>, Class<?>>();
@@ -87,7 +87,7 @@ public class WrappedEntityGenerator {
 		resultClass.addMethod(CtNewMethod.make(SET_DIRTY_FLAG_METHOD_SRC, resultClass));
 		resultClass.addMethod(CtNewMethod.make(CLEAR_DIRTY_METHOD_SRC, resultClass));
 		resultClass.addMethod(CtNewMethod.make(IS_DIRTY_METHOD_SRC, resultClass));
-		
+
 		CtMethod[] methods = superClass.getMethods();
 		for (CtMethod m: methods){
 			
@@ -131,10 +131,25 @@ public class WrappedEntityGenerator {
 		}
 		String ret = (returnType=="void"?"":"return ");
 		
+		boolean isGetPojo = (methodName.startsWith("get") && returnType!="void" && params.isEmpty());
+		
+		String methodBody = "";
+		if (isGetPojo)
+			methodBody = " "+returnType+" $$ret=super."+methodName+"(); \n"
+						+" if ($$ret!=null){ \n"
+						//+"     if (!$$dirty){ \n"
+						//+"         System.out.println(\" invocation of "+methodName+" caused dirty flag\"); \n"
+						+"         setDirty(); \n"
+						//+"     }"
+						+" }"
+						+" return $$ret; \n";
+		else
+			methodBody = " setDirty(); \n"
+					   + " "+ret+" super."+methodName+"("+args+"); \n";
+		
 		return modifier+" " +returnType+" "+methodName+"("+params+")\n"
 				+ "{ \n"
-				+ "   setDirty(); \n"
-				+ "   "+ret+" super."+methodName+"("+args+"); \n"
+				+ methodBody
 				+ "}\n";
 	}
 	
@@ -171,9 +186,9 @@ public class WrappedEntityGenerator {
 				returnType.getName().equals("java.lang.Short") ||
 				returnType.getName().equals("java.lang.Byte") ||
 				returnType.getName().equals("java.lang.String") ||
-				returnType.getName().equals("java.lang.java.util.Date") ||
-				returnType.getName().equals("java.lang.java.sql.Date") ||
-				returnType.getName().equals("java.lang.java.sql.Timestamp") ||
+				returnType.getName().equals("java.util.Date") ||
+				returnType.getName().equals("java.sql.Date") ||
+				returnType.getName().equals("java.sql.Timestamp") ||
 				returnType.isEnum()
 				;
 	}
