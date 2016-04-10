@@ -15,7 +15,7 @@ import java.util.List;
  * @author urbonman
  *
  */
-public class WritePacket {	
+public class EntityWritePacket implements IWritePacket{	
 	
 	/***
 	 * an object that got translated. 
@@ -52,7 +52,7 @@ public class WritePacket {
 	private IPropertyAccessor idAccessor;
 
 	
-	public WritePacket(Object entity, final String entityName) {
+	public EntityWritePacket(Object entity, final String entityName) {
 		this.entity = entity;
 		this.entityName = entityName;
 	}

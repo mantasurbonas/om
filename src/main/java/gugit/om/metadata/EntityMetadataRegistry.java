@@ -119,6 +119,29 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 					columnOffset += width;
 			}
 			else
+			if (annotations.isManyToMany()){
+				Class<?> detailClass = annotations.getManyToManyType();
+
+				String tableName = annotations.getManyToManyTableName();
+				String myColumn  = annotations.getManyToManyMyColumn();
+				String othColumn = annotations.getManyToManyOthColumn();
+				entityMetadata.addPojoCollectionField( 
+											new ManyToManyFieldMetadata(field, 
+																		detailClass, 
+																		columnOffset,
+																		tableName,
+																		myColumn,
+																		othColumn));
+				
+				EntityMetadata<?> pojoMetadata = getMetadataFor(detailClass);
+				
+				Integer width = pojoMetadata.getWidth();
+				if (width == null)
+					columnOffset = null;
+				else
+					columnOffset += width;
+			}
+			else
 				throw new RuntimeException("could not recognize annotation");
 		}
 		

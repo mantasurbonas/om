@@ -11,6 +11,8 @@ package gugit.om.mapping;
  */
 public interface IWriter <E>{
 
+	IPropertyAccessor<E, ?> getIdAccessor();
+	
 	void write(E entity, WriteBatch batch, WriteContext writeContext);
 	
 }

@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import gugit.om.mapping.WriteBatch;
-import gugit.om.mapping.WritePacket;
+import gugit.om.mapping.EntityWritePacket;
 import gugit.om.test.model.Address;
 import gugit.om.test.utils.TestUtils;
 
@@ -21,7 +21,7 @@ public class SimpleEntityWritingTest {
 		
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(address);
 		
-		WritePacket insertData = batch.getNext();
+		EntityWritePacket insertData = (EntityWritePacket)batch.getNext();
 		assertNotNull(insertData);
 		assertNull(insertData.getIdElement().value);		
 		
@@ -29,7 +29,7 @@ public class SimpleEntityWritingTest {
 		
 		assertNull(insertData.getByColumnName("PERSON_ID"));
 		
-		insertData = batch.getNext();
+		insertData = (EntityWritePacket)batch.getNext();
 		assertNull(insertData);
 	}
 
@@ -43,12 +43,12 @@ public class SimpleEntityWritingTest {
 		
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(address);
 		
-		WritePacket updateData = batch.getNext();
+		EntityWritePacket updateData = (EntityWritePacket)batch.getNext();
 
 		assertEquals(address.getId(), updateData.getIdElement().value);
 		assertEquals("Wellington", updateData.getByColumnName("CITY").value);
 		
-		updateData = batch.getNext();
+		updateData = (EntityWritePacket)batch.getNext();
 		assertNull(updateData);
 	}
 

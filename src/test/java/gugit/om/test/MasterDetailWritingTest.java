@@ -5,7 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import gugit.om.mapping.NullWriteValue;
 import gugit.om.mapping.WriteBatch;
-import gugit.om.mapping.WritePacket;
+import gugit.om.mapping.EntityWritePacket;
 import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
 import gugit.om.test.utils.TestUtils;
@@ -21,11 +21,11 @@ public class MasterDetailWritingTest {
 		
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(person);
 		
-		WritePacket insertData = batch.getNext();
+		EntityWritePacket insertData = (EntityWritePacket)batch.getNext();
 		assertEquals(person.getName(), insertData.getByColumnName("NAME").value);
 		assertEquals(NullWriteValue.getInstance(), insertData.getByColumnName("CURRENT_ADDRESS_ID").value);
 		
-		insertData = batch.getNext();
+		insertData = (EntityWritePacket)batch.getNext();
 		assertNull(insertData);
 	}
 
@@ -36,12 +36,12 @@ public class MasterDetailWritingTest {
 
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(person);
 		
-		WritePacket updateData = batch.getNext();
+		EntityWritePacket updateData = (EntityWritePacket)batch.getNext();
 		assertEquals(NullWriteValue.getInstance(), updateData.getByColumnName("NAME").value);
 		assertEquals(person.getId(), updateData.getIdElement().value);
 		assertEquals(NullWriteValue.getInstance(), updateData.getByColumnName("CURRENT_ADDRESS_ID").value);
 		
-		updateData = batch.getNext();
+		updateData = (EntityWritePacket)batch.getNext();
 		assertNull(updateData);
 	}
 	
@@ -59,14 +59,14 @@ public class MasterDetailWritingTest {
 		
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(person);
 		
-		WritePacket insertData = batch.getNext();
+		EntityWritePacket insertData = (EntityWritePacket)batch.getNext();
 		assertEquals(insertData.getEntity(), person); // person gets inserted first but both entities have all they needs.  
 		
-		insertData = batch.getNext();
+		insertData = (EntityWritePacket)batch.getNext();
 		assertEquals(insertData.getEntity(), address); //
 		assertEquals(address.getOwner().getId(), insertData.getByColumnName("\"OWNER_ID\"").value);
 		
-		insertData = batch.getNext();
+		insertData = (EntityWritePacket)batch.getNext();
 		assertNull(insertData);
 	}
 	
@@ -94,19 +94,19 @@ public class MasterDetailWritingTest {
 				
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(address4);
 		
-		WritePacket firstWrite = batch.getNext();
+		EntityWritePacket firstWrite = (EntityWritePacket)batch.getNext();
 		assertEquals(address1, firstWrite.getEntity());
 		
 		firstWrite.updateIDValue(99);
 		assertEquals(99, address1.getId().intValue());
 		
-		WritePacket secondWrite = batch.getNext();
+		EntityWritePacket secondWrite = (EntityWritePacket)batch.getNext();
 		assertEquals(person, secondWrite.getEntity());
 		secondWrite.updateIDValue(77);
 		
 		assertEquals(77, person.getId().intValue());
 		
-		WritePacket thirdWrite = batch.getNext();
+		EntityWritePacket thirdWrite = (EntityWritePacket)batch.getNext();
 		assertNotNull(thirdWrite);
 		assertEquals(77, thirdWrite.getByColumnName("\"OWNER_ID\"").value);
 		

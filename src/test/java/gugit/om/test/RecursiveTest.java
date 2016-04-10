@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import gugit.om.mapping.WriteBatch;
-import gugit.om.mapping.WritePacket;
+import gugit.om.mapping.EntityWritePacket;
 import gugit.om.test.model.Recursive;
 import gugit.om.test.utils.TestUtils;
 
@@ -34,21 +34,21 @@ public class RecursiveTest {
 			
 		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(rec3);
 		
-		WritePacket writePacket = batch.getNext();
+		EntityWritePacket writePacket = (EntityWritePacket)batch.getNext();
 		
 		assertNotNull(writePacket);
 		assertEquals(rec1.getLabel(), writePacket.getByColumnName("LABEL").value);
 		
 		writePacket.updateIDValue(100);
 		
-		writePacket = batch.getNext();
+		writePacket = (EntityWritePacket)batch.getNext();
 		assertNotNull(writePacket);
 		assertEquals(rec2.getLabel(), writePacket.getByColumnName("LABEL").value);
 		assertEquals(rec2.getParent().getId(), writePacket.getByColumnName("PARENT_ID").value);
 
 		writePacket.updateIDValue(101);
 		
-		writePacket = batch.getNext();
+		writePacket = (EntityWritePacket)batch.getNext();
 		assertNotNull(writePacket);
 		assertEquals(rec3.getLabel(), writePacket.getByColumnName("LABEL").value);
 		assertEquals(rec3.getParent().getId(), writePacket.getByColumnName("PARENT_ID").value);

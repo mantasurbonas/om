@@ -17,7 +17,7 @@ import java.util.Set;
  */
 public class WriteBatch {
 
-	private List<WritePacket> writePackets = new LinkedList<WritePacket>();
+	private List<IWritePacket> writePackets = new LinkedList<IWritePacket>();
 	
 	private Set<Object> scheduledEntities = new HashSet<Object>();
 
@@ -31,8 +31,8 @@ public class WriteBatch {
 		return scheduledEntities.contains(entity);
 	}
 	
-	public WritePacket createWritePacket(Object entity){
-		WritePacket d = new WritePacket(entity, entityNameProvider.getEntityName(entity.getClass()));
+	public EntityWritePacket createWritePacket(Object entity){
+		EntityWritePacket d = new EntityWritePacket(entity, entityNameProvider.getEntityName(entity.getClass()));
 		
 		if (EntityMarkingHelper.isDirty(entity))
 			writePackets.add(d);
@@ -41,10 +41,18 @@ public class WriteBatch {
 		return d;
 	}
 	
-	public WritePacket getNext() {
-		Iterator<WritePacket> i = writePackets.iterator();
+	public M2MWritePacket createManyToManyWritePacket(Object entity, String tableName){
+		M2MWritePacket ret = new M2MWritePacket(tableName);
+		
+		writePackets.add(ret);
+		
+		return ret;
+	}
+	
+	public IWritePacket getNext() {
+		Iterator<IWritePacket> i = writePackets.iterator();
 		while(i.hasNext()){
-			WritePacket writePacket = i.next();
+			IWritePacket writePacket = i.next();
 			
 			if (!writePacket.trySolveDependencies())
 				continue;

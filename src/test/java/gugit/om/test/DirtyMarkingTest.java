@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import gugit.om.OM;
+import gugit.om.mapping.EntityWritePacket;
 import gugit.om.mapping.WriteBatch;
 import gugit.om.mapping.WriteContext;
 import gugit.om.test.model.Address;
@@ -44,7 +45,7 @@ public class DirtyMarkingTest {
 		WriteContext writeContext = new WriteContext(service);
 		service.getSerializerFor(Person.class).write(person, writeBatch, writeContext);
 		
-		assertEquals(writeBatch.getNext().getEntity(), person);
+		assertEquals(((EntityWritePacket)writeBatch.getNext()).getEntity(), person);
 		
 		writeBatch = new WriteBatch(service);
 		service.getSerializerFor(Person.class).write(person, writeBatch, writeContext);
@@ -78,13 +79,13 @@ public class DirtyMarkingTest {
 		WriteBatch batch = om.writeEntity(person1);
 		om.writeEntity(person2, batch);
 		
-		assertEquals(batch.getNext().getEntity(), person2);
+		assertEquals(((EntityWritePacket)batch.getNext()).getEntity(), person2);
 		assertNull(batch.getNext());
 		
 		person2.setName("John Dilbert");
 		
 		batch = om.writeEntity(person2);
-		assertEquals(batch.getNext().getEntity(), person2);
+		assertEquals(((EntityWritePacket)batch.getNext()).getEntity(), person2);
 		
 		batch = om.writeEntity(person2);
 		assertNull(batch.getNext());		
@@ -106,8 +107,8 @@ public class DirtyMarkingTest {
 		WriteContext writeContext = new WriteContext(service);
 		service.getSerializerFor(Person.class).write(person, writeBatch, writeContext);
 		
-		assertEquals(writeBatch.getNext().getEntity(), person);
-		assertEquals(writeBatch.getNext().getEntity(), address);
+		assertEquals(((EntityWritePacket)writeBatch.getNext()).getEntity(), person);
+		assertEquals(((EntityWritePacket)writeBatch.getNext()).getEntity(), address);
 		assertNull(writeBatch.getNext());
 		
 		writeBatch = new WriteBatch(service);
@@ -133,7 +134,7 @@ public class DirtyMarkingTest {
 		assertFalse(EntityMarkingHelper.isDirty(person));
 		
 		batch = om.writeEntity(address);
-		assertEquals(batch.getNext().getEntity(), address);
+		assertEquals(((EntityWritePacket)batch.getNext()).getEntity(), address);
 		Object obj = batch.getNext();
 		assertNull(obj);
 	}

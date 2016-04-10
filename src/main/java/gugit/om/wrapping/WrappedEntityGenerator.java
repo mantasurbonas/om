@@ -137,10 +137,10 @@ public class WrappedEntityGenerator {
 		if (isGetPojo)
 			methodBody = " "+returnType+" $$ret=super."+methodName+"(); \n"
 						+" if ($$ret!=null){ \n"
-						//+"     if (!$$dirty){ \n"
-						//+"         System.out.println(\" invocation of "+methodName+" caused dirty flag\"); \n"
+						+"     if (!$$dirty){ \n"
+						+"         System.out.println(\" invocation of "+methodName+" caused dirty flag\"); \n"
 						+"         setDirty(); \n"
-						//+"     }"
+						+"     }"
 						+" }"
 						+" return $$ret; \n";
 		else

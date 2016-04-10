@@ -1,17 +1,21 @@
 package gugit.om.annotations;
 
-import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-@Target(TYPE)
+@Target(FIELD)
 @Retention(RUNTIME)
-public @interface Entity {
+public @interface ManyToMany {
+
+	Class<?> detailClass();
 	
-	String name() default "";
+	String joinTable();	
 	
-	boolean readOnly() default false;
+	String myColumn();
+	
+	String otherColumn();
 	
 }

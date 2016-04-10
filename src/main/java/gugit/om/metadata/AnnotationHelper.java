@@ -5,6 +5,7 @@ import gugit.om.annotations.Pojos;
 import gugit.om.annotations.Pojo;
 import gugit.om.annotations.ID;
 import gugit.om.annotations.Ignore;
+import gugit.om.annotations.ManyToMany;
 import gugit.om.annotations.MasterRef;
 import gugit.om.annotations.Transient;
 
@@ -38,6 +39,10 @@ public class AnnotationHelper {
 		return containsClass(Pojos.class);
 	}
 	
+	public boolean isManyToMany() {
+		return containsClass(ManyToMany.class);
+	}
+	
 	public boolean isMasterEntity() {
 		return containsClass(MasterRef.class);
 	}
@@ -59,6 +64,26 @@ public class AnnotationHelper {
 	public Class<?> getDetailEntitiesType() {
 		Pojos annotation = (Pojos)getByClass(Pojos.class);
 		return annotation.detailClass();
+	}
+	
+	public Class<?> getManyToManyType() {
+		ManyToMany annotation = (ManyToMany)getByClass(ManyToMany.class);
+		return annotation.detailClass();
+	}
+
+	public String getManyToManyMyColumn() {
+		ManyToMany annotation = (ManyToMany)getByClass(ManyToMany.class);
+		return annotation.myColumn();
+	}
+
+	public String getManyToManyOthColumn() {
+		ManyToMany annotation = (ManyToMany)getByClass(ManyToMany.class);
+		return annotation.otherColumn();
+	}
+
+	public String getManyToManyTableName() {
+		ManyToMany annotation = (ManyToMany)getByClass(ManyToMany.class);
+		return annotation.joinTable();
 	}
 	
 	public String getMasterMyColumnName(){
