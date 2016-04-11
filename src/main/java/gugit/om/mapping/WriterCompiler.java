@@ -18,7 +18,7 @@ import javassist.NotFoundException;
 
 public class WriterCompiler {
 
-    private static final boolean DUMP_FLAG = true;
+    private static final boolean DUMP_FLAG = false;
 
 	private final String ID_ACCESS_FIELD_TEMPLATE = 
 		"	private static IPropertyAccessor idAccess = new %ID_ACCESS_CLASS_NAME%();\n";

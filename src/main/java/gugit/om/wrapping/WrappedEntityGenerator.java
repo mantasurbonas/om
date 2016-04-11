@@ -138,7 +138,7 @@ public class WrappedEntityGenerator {
 			methodBody = " "+returnType+" $$ret=super."+methodName+"(); \n"
 						+" if ($$ret!=null){ \n"
 						+"     if (!$$dirty){ \n"
-						+"         System.out.println(\" invocation of "+methodName+" caused dirty flag\"); \n"
+						//+"         System.out.println(\" invocation of "+methodName+" caused dirty flag\"); \n"
 						+"         setDirty(); \n"
 						+"     }"
 						+" }"
