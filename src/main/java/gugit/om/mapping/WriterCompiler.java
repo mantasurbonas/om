@@ -2,9 +2,11 @@ package gugit.om.mapping;
 
 import java.util.List;
 
+
 import gugit.om.metadata.ColumnFieldMetadata;
 import gugit.om.metadata.DetailCollectionFieldMetadata;
 import gugit.om.metadata.EntityMetadata;
+import gugit.om.metadata.EntityMetadataRegistry;
 import gugit.om.metadata.FieldMetadata;
 import gugit.om.metadata.IEntityMetadataFactory;
 import gugit.om.metadata.ManyToManyFieldMetadata;
@@ -15,6 +17,8 @@ import javassist.CtClass;
 import javassist.CtField;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
+
+import gugit.om.utils.StringUtils;
 
 public class WriterCompiler {
 
@@ -100,10 +104,10 @@ public class WriterCompiler {
 	+ "        while(it.hasNext()) \n"
 	+ "			  wr.write(it.next(), batch, writeContext);\n"
 	
-    + "        if (wasDirty) {"
+    + "        if (wasDirty) {\n"
     + "            M2MWritePacket m2mWritePacket = batch.createManyToManyWritePacket(entity, \"%M2M_TABLE_NAME%\");\n"
-    + "            m2mWritePacket.setLeftSideDependency(\"%MY_COLUMN_NAME%\", \"%ID_FIELD_NAME%\", entity, idAccess);\n"	
-    + "            m2mWritePacket.setRightSideDependency(\"%OTH_COLUMN_NAME%\", \"%PROPERTY_NAME%\", entity.get%PROPERTY_NAME%(), wr.getIdAccessor());\n"
+    + "            m2mWritePacket.setLeftSideDependency(\"%MY_COLUMN_NAME%\", \"%ENTITY_TYPE_SHORT_NAME%\", entity, idAccess);\n"	
+    + "            m2mWritePacket.setRightSideDependency(\"%OTH_COLUMN_NAME%\", \"%POJO_TYPE_SHORT_NAME%\", entity.get%PROPERTY_NAME%(), wr.getIdAccessor(), \"%OTH_TABLE_NAME%\", \"%OTH_TABLE_ID_NAME%\");\n"
     + "        } \n"
     + "     }\n";
 							
@@ -180,7 +184,7 @@ public class WriterCompiler {
 	private String createSetValueMethod(String entityClassName, FieldMetadata idField) throws NotFoundException {
 		return new StringTemplate(PROP_ACCESS_SET_VALUE)
 					.replace("ENTITY_TYPE", entityClassName)
-					.replace("ID_FIELD_NAME", capitalize(idField.getName()))
+					.replace("ID_FIELD_NAME", StringUtils.capitalize(idField.getName()))
 					.replace("ID_FIELD_TYPE", idField.getType().getCanonicalName())
 					.dump(DUMP_FLAG)
 					.getResult();
@@ -189,7 +193,7 @@ public class WriterCompiler {
 	private String createGetValueMethod(String entityClassName, FieldMetadata idField) throws NotFoundException {
 		return new StringTemplate(PROP_ACCESS_GET_VALUE)
 					.replace("ENTITY_TYPE", entityClassName)
-					.replace("ID_FIELD_NAME", capitalize(idField.getName()))
+					.replace("ID_FIELD_NAME", StringUtils.capitalize(idField.getName()))
 					.replace("ID_FIELD_TYPE", idField.getType().getCanonicalName())
 					.dump(DUMP_FLAG)
 					.getResult();	
@@ -232,23 +236,23 @@ public class WriterCompiler {
 										Class<?> masterIdType,
 										String masterRefCol) throws NotFoundException {
 		return new StringTemplate(SOLVE_METHOD_TEMPLATE)
-						.replace("MASTER_ACCESSOR_NAME", capitalize(masterRefName))
-						.replace("MASTER_PROPERTY_NAME", capitalize(masterIdName))
+						.replace("MASTER_ACCESSOR_NAME", StringUtils.capitalize(masterRefName))
+						.replace("MASTER_PROPERTY_NAME", StringUtils.capitalize(masterIdName))
 						.replace("PROPERTY_TYPE", masterIdType.getCanonicalName())
 						.replace("ENTITY_TYPE", entityClassName)
-						.replace("COLUMN_NAME", escape(masterRefCol))
+						.replace("COLUMN_NAME", StringUtils.escape(masterRefCol))
 						.dump(DUMP_FLAG)
 						.getResult();
 	}
 
 	private void createWriteMethod(EntityMetadata<?> entityMetadata, CtClass resultClass) throws Exception {
 		String writeMethodSrc = new StringTemplate(WRITE_METHOD_TEMPLATE)
-										.replace("ID_COLUMN_NAME", escape(entityMetadata.getIdField().getColumnName()))
-										.replace("ID_FIELD_NAME", capitalize(entityMetadata.getIdField().getName()))
+										.replace("ID_COLUMN_NAME", StringUtils.escape(entityMetadata.getIdField().getColumnName()))
+										.replace("ID_FIELD_NAME", StringUtils.capitalize(entityMetadata.getIdField().getName()))
 										.replace("ENTITY_TYPE", entityMetadata.getEntityClass().getCanonicalName())
 										.replace("WRITE_PRIMITIVE_PROPERTIES_SNIPPLET", createPrimPropsSnipplet(entityMetadata.getPrimitiveFields()))
 										.replace("WRITE_POJO_PROPERTIES_SNIPPLET", createPojoPropsSnipplet(entityMetadata.getPojoFields()))
-										.replace("WRITE_POJO_COLLECTIONS_SNIPPLET", createPojoColectionsSnipplet(entityMetadata.getPojoCollectionFields()))
+										.replace("WRITE_POJO_COLLECTIONS_SNIPPLET", createPojoColectionsSnipplet(entityMetadata.getEntityClass(), entityMetadata.getPojoCollectionFields()))
 										.replace("WRITE_MASTER_DEPENDENCIES_SNIPPLET", createMasterRefSnipplet(entityMetadata.getRefFields()) )
 										.dump(DUMP_FLAG)
 										.getResult();
@@ -261,8 +265,8 @@ public class WriterCompiler {
 		
 		for (ColumnFieldMetadata fieldInfo: primitiveFields)
 			src.append(new StringTemplate(WRITE_PRIMITIVE_PROPERTY_SNIPPLET)
-							.replace("COLUMN_NAME", escape(fieldInfo.getColumnName()))
-							.replace("PROPERTY_NAME", capitalize(fieldInfo.getName()))
+							.replace("COLUMN_NAME", StringUtils.escape(fieldInfo.getColumnName()))
+							.replace("PROPERTY_NAME", StringUtils.capitalize(fieldInfo.getName()))
 							.getResult());
 		
 		return src.toString();
@@ -272,30 +276,35 @@ public class WriterCompiler {
 		StringBuilder src = new StringBuilder();
 		for (ColumnFieldMetadata fieldInfo: pojoFields)
 			src.append(new StringTemplate(WRITE_POJO_PROPERTY_SNIPPLET)
-							.replace("PROPERTY_NAME", capitalize(fieldInfo.getName()))
+							.replace("PROPERTY_NAME", StringUtils.capitalize(fieldInfo.getName()))
 							.replace("POJO_TYPE", fieldInfo.getType().getCanonicalName())
 							.getResult());
 		return src.toString();
 	}
 
-	private String createPojoColectionsSnipplet(List<DetailCollectionFieldMetadata> pojoCollectionFields) throws NotFoundException {
+	private String createPojoColectionsSnipplet(Class<?> entityClass, List<DetailCollectionFieldMetadata> pojoCollectionFields) throws NotFoundException {
 		StringBuilder src = new StringBuilder();
 		for (DetailCollectionFieldMetadata fieldInfo: pojoCollectionFields){
 			if (fieldInfo instanceof ManyToManyFieldMetadata){
 				ManyToManyFieldMetadata m2mField = (ManyToManyFieldMetadata) fieldInfo;
+				
+				EntityMetadata<?> detailMetadata = metadataFactory.getMetadataFor(m2mField.getType());
+				
 				src.append(new StringTemplate(WRITE_MANY_TO_MANY_COLLECTION_SNIPPLET)
-								.replace("PROPERTY_NAME", capitalize(fieldInfo.getName()))
+								.replace("PROPERTY_NAME", StringUtils.capitalize(fieldInfo.getName()))
 								.replace("POJO_TYPE", fieldInfo.getType().getCanonicalName())
-								.replace("M2M_TABLE_NAME", escape(m2mField.getTableName()))
-								.replace("MY_COLUMN_NAME", escape(m2mField.getMyColumnName()))
-								.replace("ID_FIELD_NAME", escape(m2mField.getName()))
-								.replace("OTH_COLUMN_NAME", escape(m2mField.getOthColumnName()))
-								.replace("OTH_FIELD_NAME", "gugitM2mOtherId")
+								.replace("M2M_TABLE_NAME", StringUtils.escape(m2mField.getTableName()))
+								.replace("MY_COLUMN_NAME", StringUtils.escape(m2mField.getMyColumnName()))
+								.replace("POJO_TYPE_SHORT_NAME", fieldInfo.getType().getSimpleName())
+								.replace("ENTITY_TYPE_SHORT_NAME", entityClass.getSimpleName())
+								.replace("OTH_COLUMN_NAME", StringUtils.escape(m2mField.getOthColumnName()))
+								.replace("OTH_TABLE_NAME", StringUtils.escape(detailMetadata.getEntityName()))
+								.replace("OTH_TABLE_ID_NAME", StringUtils.escape(detailMetadata.getIdField().getColumnName()))
 								.getResult());
 			}
 			else{
 				src.append(new StringTemplate(WRITE_POJO_COLLECTION_SNIPPLET)
-								.replace("PROPERTY_NAME", capitalize(fieldInfo.getName()))
+								.replace("PROPERTY_NAME", StringUtils.capitalize(fieldInfo.getName()))
 								.replace("POJO_TYPE", fieldInfo.getType().getCanonicalName())
 								.getResult());
 			}
@@ -308,10 +317,10 @@ public class WriterCompiler {
 		for (ColumnFieldMetadata masterRef: masterReferenceFields){
 			EntityMetadata<?> masterEntityMeta = metadataFactory.getMetadataFor(masterRef.getType());
 			src.append(new StringTemplate(WRITE_MASTER_DEPENDENCY_SNIPPLET)
-							.replace("MASTER_ACCESSOR_NAME", capitalize(masterRef.getName()))
-							.replace("COLUMN_NAME", escape(masterRef.getColumnName()))
+							.replace("MASTER_ACCESSOR_NAME", StringUtils.capitalize(masterRef.getName()))
+							.replace("COLUMN_NAME", StringUtils.escape(masterRef.getColumnName()))
 							.replace("MASTER_CLASS", masterRef.getType().getCanonicalName())
-							.replace("MASTER_PROPERTY_NAME", capitalize(masterEntityMeta.getIdField().getName()))
+							.replace("MASTER_PROPERTY_NAME", StringUtils.capitalize(masterEntityMeta.getIdField().getName()))
 							.replace("DEPENDENCY_VAR_NAME", getMasterDependencyVarName(masterRef.getName(), masterEntityMeta.getIdField().getName()))
 							.getResult());
 		}
@@ -334,11 +343,4 @@ public class WriterCompiler {
 					+"Dependency";
 	}
 	
-	private String capitalize(String name) {
-		return name.substring(0,1).toUpperCase()+name.substring(1);
-	}
-
-	private static String escape(final String str){
-		return str.replace("\"", "\\\"");//.replace("\\", "\\\\");
-	}
 }

@@ -14,10 +14,9 @@ import org.junit.Test;
 import gugit.om.OM;
 import gugit.om.mapping.EntityWritePacket;
 import gugit.om.mapping.IPropertyAccessor;
-import gugit.om.mapping.IWritePacket;
 import gugit.om.mapping.M2MWritePacket;
-import gugit.om.mapping.M2MWritePacketElement;
 import gugit.om.mapping.WriteBatch;
+import gugit.om.mapping.WritePacketElement;
 import gugit.om.test.model.A;
 import gugit.om.test.model.B;
 import gugit.om.wrapping.EntityMarkingHelper;
@@ -25,47 +24,43 @@ import gugit.services.EntityServiceFacade;
 
 public class ManyToManyTest {
 
+	private static class AIdAccessor implements IPropertyAccessor<A, Integer>{
+		public void setValue(A entity, Integer value) {  entity.setId(value);		}
+		public Integer getValue(A entity) {  return entity.getId();		} 
+	};
+	
+	private static class BIdAccessor implements IPropertyAccessor<B, Integer>{
+		public void setValue(B entity, Integer value) {  entity.setId(value); }
+		public Integer getValue(B entity) {  return entity.getId();		}
+	};
+	
 	@Test
 	public void testDependencyResolution() {
-		A a = new A();
+		A aEntity = new A();
 		
-		IPropertyAccessor<A, Integer> aIdAccessor = new IPropertyAccessor<A, Integer>(){
-			public void setValue(A entity, Integer value) {
-				entity.setId(value);
-			}
-			public Integer getValue(A entity) {
-				return entity.getId();
-			} 
-		};
+		IPropertyAccessor<A, Integer> aIdAccessor = new AIdAccessor();
 		
-		IPropertyAccessor<B, Integer> bIdAccessor = new IPropertyAccessor<B, Integer>() {
-			public void setValue(B entity, Integer value) {
-				entity.setId(value);
-			}
-			public Integer getValue(B entity) {
-				return entity.getId();
-			}
-		};
+		IPropertyAccessor<B, Integer> bIdAccessor = new BIdAccessor();
 		
 		M2MWritePacket writePacket = new M2MWritePacket("A_TO_B");
-		writePacket.setLeftSideDependency("A_ID", "a", a, aIdAccessor);
-		writePacket.setRightSideDependency("B_ID", "b", null, bIdAccessor); 
+		writePacket.setLeftSideDependency("A_ID", "a", aEntity, aIdAccessor);
+		writePacket.setRightSideDependency("B_ID", "b", null, bIdAccessor, "B_TABLE", "ID"); 
 		
 		assertTrue(writePacket.trySolveDependencies());
 		
-		Collection<B> entities = new LinkedList<B>();
-		writePacket.setRightSideDependency("B_ID", "b", entities, bIdAccessor);
+		Collection<B> bEntities = new LinkedList<B>();
+		writePacket.setRightSideDependency("B_ID", "b", bEntities, bIdAccessor, "B_TABLE", "ID");
 		
 		assertTrue(writePacket.trySolveDependencies());
 
 		B b1 = new B();
 		B b2 = new B();
-		entities.add(b1);
-		entities.add(b2);
+		bEntities.add(b1);
+		bEntities.add(b2);
 		
 		assertFalse(writePacket.trySolveDependencies());
 		
-		a.setId(1);
+		aEntity.setId(1);
 		assertFalse(writePacket.trySolveDependencies());
 		
 		b1.setId(2);
@@ -74,10 +69,15 @@ public class ManyToManyTest {
 		b2.setId(3);
 		assertTrue(writePacket.trySolveDependencies());
 		
-		M2MWritePacketElement element = writePacket.getElement();
-		assertEquals(element.rightSideValues.size(), entities.size());
+		WritePacketElement aElement = writePacket.getByFieldName("a");
+		assertEquals(aElement.value, aEntity.getId());
 		
-		assertEquals(element.rightSideValues.iterator().next(), b1.getId());
+		WritePacketElement bElement = writePacket.getByFieldName("b");
+		
+		Collection<Integer> bElementValues = (Collection<Integer>)bElement.value;
+		assertEquals(bElementValues.size(), bEntities.size());
+		
+		assertEquals(bElementValues.iterator().next(), b1.getId());
 	}
 	
 	@Test
@@ -119,20 +119,24 @@ public class ManyToManyTest {
 		EntityMarkingHelper.setDirty(b, false);
 		
 		// finally, a many-to-many table should be updated with correct entries
-		M2MWritePacket m2mPac = (M2MWritePacket)batch.getNext();
-		assertNotNull(m2mPac);
+		M2MWritePacket m2mWrite = (M2MWritePacket)batch.getNext();
+		assertNotNull(m2mWrite);
 		
-		M2MWritePacketElement element = m2mPac.getElement();
-		assertEquals(element.leftSideValue, a.getId());
-		assertEquals(element.rightSideValues.size(), 2);
+		WritePacketElement bindingToA = m2mWrite.getByFieldName("A");
+		assertEquals(bindingToA.value, a.getId());
 		
+		WritePacketElement bindingsToB = m2mWrite.getByFieldName("B");
+		Collection<Integer> bValues = (Collection<Integer>)bindingsToB.value;
+		assertEquals(bValues.size(), 2);
+		
+		// lastly, write batch should be empty by now
 		assertNull(batch.getNext());
 		
 		// saving the already-persisted, unmodified object graph should cause zero writes to the database
 		batch = om.writeEntity(a);
 		assertNull(batch.getNext());
 		
-		// modifying any object down the graph should cause a single write to the database
+		// modifying any object down the graph should cause just a single write to the database
 		b.touch();
 		
 		batch = om.writeEntity(a);

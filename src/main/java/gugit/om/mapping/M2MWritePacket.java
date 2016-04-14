@@ -14,20 +14,24 @@ import java.util.List;
 public class M2MWritePacket implements IWritePacket{
 
 	private String tableName;
-	private String leftSideCol;
-	private String leftSideField;
+	public String leftSideCol;
+	public String leftSideField;
 	@SuppressWarnings("rawtypes")
 	private IPropertyAccessor leftSideIdAccessor;
 	private Object leftSideEntity;
 	
-	private String rightSideCol;
-	private String rightSideField;
+	public String rightSideCol;
+	public String rightSideField;
 	@SuppressWarnings("rawtypes")
 	private IPropertyAccessor rightSideIdAccessor;
 	@SuppressWarnings("rawtypes")
 	private Collection rightSideEntities;
 
-	private M2MWritePacketElement element = null;
+	public String rightSideTable;
+	public String rightSideTableId;
+	
+	private WritePacketElement leftSideElement;
+	private WritePacketElement rightSideElement;
 
 	public M2MWritePacket(String m2mTableName){
 		this.tableName = m2mTableName;
@@ -42,11 +46,14 @@ public class M2MWritePacket implements IWritePacket{
 	}
 	
 	@SuppressWarnings("rawtypes")
-	public void setRightSideDependency(String colName, String fieldName, Collection entities, IPropertyAccessor idAccessor){
+	public void setRightSideDependency(String colName, String fieldName, Collection entities, IPropertyAccessor idAccessor, String rightSideTable, String rightSideTableId){
 		this.rightSideCol = colName;
 		this.rightSideField = fieldName;
 		this.rightSideIdAccessor = idAccessor;
 		this.rightSideEntities = entities;
+		
+		this.rightSideTable = rightSideTable;
+		this.rightSideTableId = rightSideTableId;
 	}
 	
 	public String getEntityName(){
@@ -55,7 +62,6 @@ public class M2MWritePacket implements IWritePacket{
 	
 	@SuppressWarnings("unchecked")
 	public boolean trySolveDependencies() {
-		element = null;
 		
 		if (rightSideEntities == null || rightSideEntities.isEmpty())
 			return true;
@@ -73,12 +79,28 @@ public class M2MWritePacket implements IWritePacket{
 			rightSideIDs.add(id);
 		}
 		
-		element = new M2MWritePacketElement(leftSideCol, leftSideField, leftSideID, rightSideCol, rightSideField, rightSideIDs);
+		leftSideElement = new WritePacketElement(leftSideCol, leftSideField, leftSideID);
+		rightSideElement = new WritePacketElement(rightSideCol, rightSideField, rightSideIDs);
 		
 		return true;
 	}
-	
-	public M2MWritePacketElement getElement(){
-		return element;
+
+	@Override
+	public WritePacketElement getByFieldName(String fieldName) {
+		if (fieldName.equalsIgnoreCase(leftSideElement.fieldName))
+			return leftSideElement;
+		else
+		if (fieldName.equalsIgnoreCase(rightSideElement.fieldName))
+			return rightSideElement;
+		else
+			throw new RuntimeException("cannot find field "+fieldName);
+	}
+
+	@Override
+	public List<WritePacketElement> getElements() {
+		ArrayList<WritePacketElement> ret = new ArrayList<WritePacketElement>(2);
+			ret.add(leftSideElement);
+			ret.add(rightSideElement);
+		return ret;
 	}
 }
