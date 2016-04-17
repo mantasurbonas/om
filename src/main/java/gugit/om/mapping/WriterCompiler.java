@@ -2,23 +2,20 @@ package gugit.om.mapping;
 
 import java.util.List;
 
-
 import gugit.om.metadata.ColumnFieldMetadata;
 import gugit.om.metadata.DetailCollectionFieldMetadata;
 import gugit.om.metadata.EntityMetadata;
-import gugit.om.metadata.EntityMetadataRegistry;
 import gugit.om.metadata.FieldMetadata;
 import gugit.om.metadata.IEntityMetadataFactory;
 import gugit.om.metadata.ManyToManyFieldMetadata;
 import gugit.om.utils.StringTemplate;
+import gugit.om.utils.StringUtils;
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
-
-import gugit.om.utils.StringUtils;
 
 public class WriterCompiler {
 
@@ -105,9 +102,12 @@ public class WriterCompiler {
 	+ "			  wr.write(it.next(), batch, writeContext);\n"
 	
     + "        if (wasDirty) {\n"
-    + "            M2MWritePacket m2mWritePacket = batch.createManyToManyWritePacket(entity, \"%M2M_TABLE_NAME%\");\n"
-    + "            m2mWritePacket.setLeftSideDependency(\"%MY_COLUMN_NAME%\", \"%ENTITY_TYPE_SHORT_NAME%\", entity, idAccess);\n"	
-    + "            m2mWritePacket.setRightSideDependency(\"%OTH_COLUMN_NAME%\", \"%POJO_TYPE_SHORT_NAME%\", entity.get%PROPERTY_NAME%(), wr.getIdAccessor(), \"%OTH_TABLE_NAME%\", \"%OTH_TABLE_ID_NAME%\");\n"
+    + "            java.util.Collection details = entity.get%PROPERTY_NAME%(); \n"
+    + "            if (details != null && details.isEmpty() == false){ \n"
+    + "                M2MWritePacket m2mWritePacket = batch.createManyToManyWritePacket(entity, \"%M2M_TABLE_NAME%\");\n"
+    + "                m2mWritePacket.setLeftSideDependency(\"%MY_COLUMN_NAME%\", \"%ENTITY_TYPE_SHORT_NAME%\", entity, idAccess);\n"	
+    + "                m2mWritePacket.setRightSideDependency(\"%OTH_COLUMN_NAME%\", \"%POJO_TYPE_SHORT_NAME%\", details, wr.getIdAccessor(), \"%OTH_TABLE_NAME%\", \"%OTH_TABLE_ID_NAME%\");\n"
+    + "            }\n"
     + "        } \n"
     + "     }\n";
 							
