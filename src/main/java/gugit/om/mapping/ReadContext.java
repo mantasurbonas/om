@@ -51,6 +51,10 @@ public class ReadContext {
 		previousReads.put(position, obj);
 	}
 	
+	public void resetRead(int position){
+		previousReads.put(position, null);
+	}
+	
 	public void clear(){
 		currentlyReadEntities.clear();
 		previousReads.clear();

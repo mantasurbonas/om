@@ -84,7 +84,7 @@ public class RecursiveTest {
 			resultset.add(new Object[]{1, "rec1", null, 2, "rec2", 1, 3, "rec3", 2});
 			resultset.add(new Object[]{1, "rec4", null, 5, "rec5", 1, 6, "rec6", 5});
 			resultset.add(new Object[]{7, "rec7", null, 8, "rec8", 7, 9, "rec9", 8});
-			resultset.add(new Object[]{10,"rec10",null, 11,"rec11",10,9, "rec9", 8});
+			resultset.add(new Object[]{10,"rec10",null, 11,"rec11",10,12, "rec12", 8});
 			
 		List<Recursive> entities = TestUtils.createObjectMapper().readEntities(resultset, Recursive.class);
 		
@@ -97,8 +97,7 @@ public class RecursiveTest {
 		assertEquals("rec9", entities.get(1).getChild().getChild().getLabel());
 		
 		assertEquals(10, entities.get(2).getId().intValue());
-		assertEquals("rec9", entities.get(2).getChild().getChild().getLabel());
-		assertEquals(entities.get(1).getChild().getChild(), entities.get(2).getChild().getChild());
+		assertEquals("rec12", entities.get(2).getChild().getChild().getLabel());
 	}
 	
 }

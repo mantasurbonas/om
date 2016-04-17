@@ -1,14 +1,20 @@
 package gugit.om.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
-import gugit.om.test.model.Person;
-import gugit.om.test.utils.TestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
+
+import gugit.om.mapping.IReader;
+import gugit.om.mapping.ReadContext;
+import gugit.om.test.model.Address;
+import gugit.om.test.model.Person;
+import gugit.om.test.utils.TestUtils;
+import gugit.om.utils.IDataIterator;
 
 public class MasterDetailReadingTest {
 
@@ -59,4 +65,22 @@ public class MasterDetailReadingTest {
 		
 		assertEquals(3, persons.get(1).getPreviousAddresses().size());		
 	}
+	
+	@Test
+	public void testResetingDetailObject(){
+		List<Object[]> resultset = new ArrayList<Object[]>();
+			resultset.add(new Object[]{14, "John Smith",    null, null, null, null, null, 123, "New Zealand", "Nelson", "Ocean str 147/13", 14});
+			resultset.add(new Object[]{15, "Peter Jameson", null, null, null, null, null, 123, "UK", "Birmingham", "Wookie rd 48", 15});
+			resultset.add(new Object[]{16, "Zack Bradigan", null, null, null, null, null, 123, "New Zealand", "Nelson", "Ocean str 147/13", 15});
+		
+		List<Person> persons = TestUtils.createObjectMapper().readEntities(resultset, Person.class);
+		
+		assertEquals(3, persons.size());
+		
+		Address address1 = persons.get(0).getPreviousAddresses().get(0);
+		Address address2 = persons.get(1).getPreviousAddresses().get(0);
+		
+		assertNotEquals(address1, address2);
+	}
+	
 }

@@ -20,25 +20,28 @@ public class ReaderCompiler {
 		+ "   Object id = row.peek( position + %ID_COL_OFFSET% ); \n"
 		
 		+ "   if (id == null){  \n"
-		+ "     readContext.cacheRead(position, null); \n"
+		+ "     readContext.resetRead(position); \n"
 		+ "     return null; \n"
 		+ "   } \n"
 
 		+ "   %ENTITY_CLASS_NAME% entity = (%ENTITY_CLASS_NAME%)readContext.getCachedRead(position); \n"
 		
-		+ "  if (entity == null || !id.equals(entity.get%ID_SETTER_METHOD%())){ \n"
+		+ "   if (entity == null || !id.equals(entity.get%ID_SETTER_METHOD%())){ \n"
+		
+		+ "     %RESET_CACHED_DETAILS% \n"
+		
 		+ "     entity = (%ENTITY_CLASS_NAME%)readContext.createEntity(%ENTITY_CLASS_NAME%.class);  \n"
 		+ "     entity.set%ID_SETTER_METHOD%( (%ID_TYPE%) id);  \n"
 		
-		+"      %ADD_TO_READ_CONTEXT% \n"
+		+ "     %ADD_TO_READ_CONTEXT% \n"
 		
 		+ "     %FIELDS_MAPPING_SNIPPLET% \n"
 		
 		+ "     readContext.cacheRead(position, entity); \n"
 		
-		+ "  } else {\n"
+		+ "   } else {\n"
 		+"      %ADD_TO_READ_CONTEXT% \n"
-		+ "  }\n"
+		+ "   }\n"
 		
 		+ "  %DETAILS_COLLECTION_MAPPING_SNIPPLET% \n"
 		
@@ -65,17 +68,20 @@ public class ReaderCompiler {
 	static final String END_READ_CONTEXT_TEMPLATE=
 			"      readContext.entityReadingFinished(); \n";
 	
+	static final String RESET_READ_TEMPLATE = 
+			"      readContext.resetRead(position + %START_OFFSET%); \n";
+	
 	static final String SIMPLE_FIELD_MAPPING_SNIPPLET_TEMPLATE = 
 			  "  entity.set%FIELD_NAME%( (%FIELD_TYPE%) row.peek( position + %FIELD_COL_OFFSET% ) ); \n";
 	
 	static final String POJO_FIELD_MAPPING_SNIPPLET_TEMPLATE = 
-			   " {  \n"
+			  " {  \n"
 			+  "   %DETAIL_TYPE% detail = ( %DETAIL_TYPE% ) readContext.getReaderFor(%DETAIL_TYPE%.class).read(row, position + %POJO_START_OFFSET%, readContext);  \n"
 			+  "   if (detail!=null) \n"
 			+  "      entity.set%FIELD_NAME%(detail);  \n"
 			+  " } \n";
 	
-	static final String ADD_DETAIL_TO_COLLECTION_SNIPPLET_TEMPLATE = 
+	static final String ADD_DETAIL_TO_COLLECTION_SNIPPLET_TEMPLATE =
 		 	  " {  \n"
 			+ "    %DETAIL_TYPE% detail = ( %DETAIL_TYPE% ) readContext.getReaderFor(%DETAIL_TYPE%.class).read(row, position + %POJO_START_OFFSET%, readContext);  \n"
 			+ "    if ((detail != null) && !entity.get%FIELD_NAME%().contains(detail))  \n"
@@ -92,6 +98,8 @@ public class ReaderCompiler {
 			+ "  }\n"
 			+ " } \n";
 
+	private boolean debugFlag = false;
+	
 	public ReaderCompiler(){
 	}
 	
@@ -108,14 +116,35 @@ public class ReaderCompiler {
 						.replace("ENTITY_CLASS_NAME", entityMetadata.getEntityClass().getCanonicalName())
 						.replace("ID_SETTER_METHOD", capitalize(entityMetadata.getIdField().getName()))
 						.replace("ID_TYPE", entityMetadata.getIdField().getType().getCanonicalName())
+						.replace("RESET_CACHED_DETAILS", createResetReadsSnipplet(entityMetadata.getPojoCollectionFields(), entityMetadata.getPojoFields()))
 						.replace("FIELDS_MAPPING_SNIPPLET", createFieldsMappingSrc(entityMetadata.getPrimitiveFields(), entityMetadata.getPojoFields()))
 						.replace("DETAILS_COLLECTION_MAPPING_SNIPPLET", createDetailsCollectionMappingSrc(entityMetadata.getPojoCollectionFields()))
 						.replace("MASTER_SETTING_SNIPPLET", createMasterSettingSnipplet(entityMetadata.getMasterRefFields()))
 						.replace("ADD_TO_READ_CONTEXT", needsReadContext?ADD_TO_READ_CONTEXT_TEMPLATE: "")
 						.replace("REMOVE_FROM_READ_CONTEXT", needsReadContext?END_READ_CONTEXT_TEMPLATE: "")
 						.removeUnusedKeys()
-						.dump(false)
+						.dump(debugFlag)
 						.getResult();
+	}
+
+	private String createResetReadsSnipplet(List<DetailCollectionFieldMetadata> lists, List<ColumnFieldMetadata> pojos) {
+		StringBuilder src = new StringBuilder();
+		
+		StringTemplate line = new StringTemplate(RESET_READ_TEMPLATE);
+		
+		for (DetailCollectionFieldMetadata list: lists)
+			src.append(line
+						.reset()
+						.replace("START_OFFSET", ""+list.getColumnOffset())
+						.getResult());
+		
+		for (ColumnFieldMetadata pojo: pojos)
+			src.append(line
+						.reset()
+						.replace("START_OFFSET", ""+pojo.getColumnOffset())
+						.getResult());
+		
+		return src.toString();
 	}
 
 	private String createDetailsCollectionMappingSrc(List<DetailCollectionFieldMetadata> detailCollections){
