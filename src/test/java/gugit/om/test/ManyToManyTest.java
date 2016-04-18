@@ -34,6 +34,7 @@ public class ManyToManyTest {
 		public Integer getValue(B entity) {  return entity.getId();		}
 	};
 	
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testDependencyResolution() {
 		A aEntity = new A();
@@ -89,6 +90,7 @@ public class ManyToManyTest {
 		assertEquals(a.getBees().size(), 1);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testManyToManyWriting(){
 		EntityServiceFacade entityService = new EntityServiceFacade();

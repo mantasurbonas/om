@@ -9,12 +9,9 @@ import java.util.List;
 
 import org.junit.Test;
 
-import gugit.om.mapping.IReader;
-import gugit.om.mapping.ReadContext;
 import gugit.om.test.model.Address;
 import gugit.om.test.model.Person;
 import gugit.om.test.utils.TestUtils;
-import gugit.om.utils.IDataIterator;
 
 public class MasterDetailReadingTest {
 
