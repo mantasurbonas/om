@@ -1,5 +1,6 @@
 package gugit.om.mapping;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import gugit.om.metadata.ColumnFieldMetadata;
@@ -342,5 +343,21 @@ public class WriterCompiler {
 					+masterEntityId
 					+"Dependency";
 	}
+
+    public List<String> getRelatedClassNames(Class<?> entityClass) {
+        List<String> ret = new LinkedList<String>();
+        
+        ret.add(getIdAccessClassName(entityClass));
+      
+        EntityMetadata<?> entityMetadata = metadataFactory.getMetadataFor(entityClass);
+        for (ColumnFieldMetadata masterInfo: entityMetadata.getRefFields()){
+            EntityMetadata<?> masterMeta = metadataFactory.getMetadataFor(masterInfo.getType());
+            String masterRefName = masterInfo.getName();
+            String masterId = masterMeta.getIdField().getName();
+            ret.add(getMasterDependencyClassName(entityClass.getCanonicalName(), masterRefName, masterId));
+        }
+        
+        return ret;
+    }
 	
 }

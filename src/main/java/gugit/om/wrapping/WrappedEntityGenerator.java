@@ -72,8 +72,8 @@ public class WrappedEntityGenerator {
 		
 		CtClass resultClass = pool.getOrNull(generatedClassName);
 		if (resultClass != null)
-			return (Class<T>)Class.forName(generatedClassName);
-
+		    return getExistingWrapperClass(entityClass);
+		
 		System.out.println("Generating wrapper for entity class "+entityClass);
 		
 		CtClass superClass = pool.getOrNull(entityClass.getCanonicalName());
