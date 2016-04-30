@@ -4,6 +4,7 @@ import java.util.List;
 
 import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.IEntityMetadataFactory;
+import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
 
@@ -23,6 +24,8 @@ public class SerializerCompiler {
 		this.pool.importPackage("gugit.om.mapping");
 		this.pool.importPackage("gugit.om.utils");
 		this.pool.importPackage("gugit.om.wrapping");
+		
+		pool.insertClassPath(new ClassClassPath(ISerializer.class));
 		
 		this.writerCompiler = new WriterCompiler(metadataFactory, pool);
 		this.readerCompiler = new ReaderCompiler();
