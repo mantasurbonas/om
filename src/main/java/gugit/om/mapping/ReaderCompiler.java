@@ -98,7 +98,7 @@ public class ReaderCompiler {
 			+ "  }\n"
 			+ " } \n";
 
-	private boolean debugFlag = false;
+	private boolean debugFlag = true;
 	
 	public ReaderCompiler(){
 	}

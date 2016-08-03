@@ -2,11 +2,16 @@ package gugit.om.utils;
 
 import java.util.regex.Matcher;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class StringTemplate {
 
 	private String template;
 
 	private String result;
+	
+	private static final Logger logger = LogManager.getLogger();
 	
 	public StringTemplate(final String template){
 		this.template = template;
@@ -38,7 +43,7 @@ public class StringTemplate {
 	
 	public StringTemplate dump(boolean shouldDump){
 		if (shouldDump)
-			System.out.println(result);
+			logger.trace(result);
 		return this;
 	}
 }
