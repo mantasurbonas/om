@@ -13,45 +13,45 @@ import javassist.NotFoundException;
 public class ReaderCompiler {
 
 	private static final String READ_METHOD_TEMPLATE = 
-		  " public Object read(IDataIterator row, int position, ReadContext readContext){ \n"
+		  "\n public Object read(IDataIterator row, int position, ReadContext readContext){ \n"
 		+ "   if (row.isOutOfBounds(position)) \n"
-		+ "       return null; \n"
+		+ "       return null; \n\n"
 		
-		+ "   Object id = row.peek( position + %ID_COL_OFFSET% ); \n"
+		+ "   Object id = row.peek( position + %ID_COL_OFFSET% ); \n\n"
 		
 		+ "   if (id == null){  \n"
-		+ "     readContext.resetRead(position); \n"
-		+ "     return null; \n"
-		+ "   } \n"
+		+ "       readContext.resetRead(position); \n"
+		+ "       return null; \n"
+		+ "   } \n\n"
 
 		+ "   %ENTITY_CLASS_NAME% entity = (%ENTITY_CLASS_NAME%)readContext.getCachedRead(position); \n"
 		
 		+ "   if (entity == null || !id.equals(entity.get%ID_SETTER_METHOD%())){ \n"
 		
-		+ "     %RESET_CACHED_DETAILS% \n"
+		+        " %RESET_CACHED_DETAILS% \n"
 		
-		+ "     entity = (%ENTITY_CLASS_NAME%)readContext.createEntity(%ENTITY_CLASS_NAME%.class);  \n"
-		+ "     entity.set%ID_SETTER_METHOD%( (%ID_TYPE%) id);  \n"
+		+ "       entity = (%ENTITY_CLASS_NAME%)readContext.createEntity(%ENTITY_CLASS_NAME%.class);  \n"
+		+ "       entity.set%ID_SETTER_METHOD%( (%ID_TYPE%) id);  \n"
 		
-		+ "     %ADD_TO_READ_CONTEXT% \n"
+		+ "       %ADD_TO_READ_CONTEXT% \n"
 		
-		+ "     %FIELDS_MAPPING_SNIPPLET% \n"
+		+        "%FIELDS_MAPPING_SNIPPLET%\n"
 		
-		+ "     readContext.cacheRead(position, entity); \n"
+		+ "       readContext.cacheRead(position, entity); \n"
 		
 		+ "   } else {\n"
-		+"      %ADD_TO_READ_CONTEXT% \n"
+		+"        %ADD_TO_READ_CONTEXT% "
 		+ "   }\n"
 		
-		+ "  %DETAILS_COLLECTION_MAPPING_SNIPPLET% \n"
+		+ "   %DETAILS_COLLECTION_MAPPING_SNIPPLET% \n"
 		
-		+ "  %MASTER_SETTING_SNIPPLET% \n"
+		+ "   %MASTER_SETTING_SNIPPLET% \n"
 		
-		+"   %REMOVE_FROM_READ_CONTEXT% \n"
+		+ "   %REMOVE_FROM_READ_CONTEXT% \n"
 		
-		+ "  gugit.om.wrapping.EntityMarkingHelper.setDirty(entity, false); \n"
+		+ "   gugit.om.wrapping.EntityMarkingHelper.setDirty(entity, false); \n"
 		
-		+ "  return entity; \n"
+		+ "   return entity; \n"
 		+ " } \n";
 	
 	/***
@@ -59,23 +59,23 @@ public class ReaderCompiler {
 	 * thus we may skip this method invocation if we are certain we will NOT need any master entity lookups.
 	 */
 	static final String ADD_TO_READ_CONTEXT_TEMPLATE=
-			 "     readContext.entityIsBeingRead(entity, id); \n";
+			 "readContext.entityIsBeingRead(entity, id); \n";
 
 	/***
 	 * ReadContext is only needed for master entity lookup.
 	 * thus we may skip this method invocation if we are certain we will NOT need any master entity lookups.
 	 */
 	static final String END_READ_CONTEXT_TEMPLATE=
-			"      readContext.entityReadingFinished(); \n";
+			"readContext.entityReadingFinished(); \n";
 	
 	static final String RESET_READ_TEMPLATE = 
 			"      readContext.resetRead(position + %START_OFFSET%); \n";
 	
 	static final String SIMPLE_FIELD_MAPPING_SNIPPLET_TEMPLATE = 
-			  "  entity.set%FIELD_NAME%( (%FIELD_TYPE%) row.peek( position + %FIELD_COL_OFFSET% ) ); \n";
+			"       entity.set%FIELD_NAME%( (%FIELD_TYPE%) row.peek( position + %FIELD_COL_OFFSET% ) ); \n";
 	
 	static final String POJO_FIELD_MAPPING_SNIPPLET_TEMPLATE = 
-			  " {  \n"
+			   " {  \n"
 			+  "   %DETAIL_TYPE% detail = ( %DETAIL_TYPE% ) readContext.getReaderFor(%DETAIL_TYPE%.class).read(row, position + %POJO_START_OFFSET%, readContext);  \n"
 			+  "   if (detail!=null) \n"
 			+  "      entity.set%FIELD_NAME%(detail);  \n"

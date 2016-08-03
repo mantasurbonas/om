@@ -4,6 +4,9 @@ import gugit.om.annotations.Column;
 import gugit.om.annotations.ID;
 
 public class SimpleAddress{
+	
+	public static final String IGNORE_ME_FIELD = "hi"; 
+	
 	@ID(name="ID")
 	private Integer id;
 	

@@ -52,7 +52,9 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 	
 	protected <T> EntityMetadata<T> createMetadataInstance(Class<T> entityClass, IDataIterator<Field> fields) {
 		Field idField = findID(fields);
-		ColumnFieldMetadata idMetadata = createIDMetadata(idField, fields.getPosition());		
+		int idFieldPosition = 0; // ID field will always be zero. fields.getPosition();
+		
+		ColumnFieldMetadata idMetadata = createIDMetadata(idField, idFieldPosition);		
 		fields.next();
 
 		return new EntityMetadata<T>(entityClass, 
@@ -64,7 +66,7 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 		
 		Set<Class<?>> relatedTypes = new HashSet<Class<?>>();
 		
-		Integer columnOffset = fields.getPosition();
+		Integer columnOffset = 1; // ID will always be the very first field. //fields.getPosition();
 		
 		while (!fields.isFinished()){
 			Field field = fields.getNext();
