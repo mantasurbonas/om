@@ -20,13 +20,13 @@ public class ReaderCompiler {
 		+ "   Object id = row.peek( position + %ID_COL_OFFSET% ); \n\n"
 		
 		+ "   if (id == null){  \n"
-		+ "       readContext.resetRead(position); \n"
+		//+ "       readContext.resetRead(position); \n"
 		+ "       return null; \n"
 		+ "   } \n\n"
 
-		+ "   %ENTITY_CLASS_NAME% entity = (%ENTITY_CLASS_NAME%)readContext.getCachedRead(position); \n"
+		+ "   %ENTITY_CLASS_NAME% entity = (%ENTITY_CLASS_NAME%)readContext.getCachedRead(position, id); \n"
 		
-		+ "   if (entity == null || !id.equals(entity.get%ID_SETTER_METHOD%())){ \n"
+		+ "   if (entity == null){ \n" // || !id.equals(entity.get%ID_SETTER_METHOD%())){ \n"
 		
 		+        " %RESET_CACHED_DETAILS% \n"
 		
@@ -37,7 +37,7 @@ public class ReaderCompiler {
 		
 		+        "%FIELDS_MAPPING_SNIPPLET%\n"
 		
-		+ "       readContext.cacheRead(position, entity); \n"
+		+ "       readContext.cacheRead(position, id, entity); \n"
 		
 		+ "   } else {\n"
 		+"        %ADD_TO_READ_CONTEXT% "

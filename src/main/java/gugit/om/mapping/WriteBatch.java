@@ -1,13 +1,13 @@
 package gugit.om.mapping;
 
-import gugit.om.metadata.IEntityNameProvider;
-import gugit.om.wrapping.EntityMarkingHelper;
-
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+
+import gugit.om.metadata.IEntityNameProvider;
+import gugit.om.wrapping.EntityMarkingHelper;
 
 /***
  * A collection of WritePackets, as produced by the calls to AbstractWriter::write(entity)
@@ -17,7 +17,7 @@ import java.util.Set;
  */
 public class WriteBatch {
 
-	private List<IWritePacket> writePackets = new LinkedList<IWritePacket>();
+	private List<IWritePacket> writePackets = new ArrayList<IWritePacket>();
 	
 	private Set<Object> scheduledEntities = new HashSet<Object>();
 

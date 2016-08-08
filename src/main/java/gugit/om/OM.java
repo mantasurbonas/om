@@ -1,5 +1,10 @@
 package gugit.om;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
 import gugit.om.mapping.ISerializer;
 import gugit.om.mapping.ReadContext;
 import gugit.om.mapping.WriteBatch;
@@ -7,11 +12,6 @@ import gugit.om.mapping.WriteContext;
 import gugit.om.utils.ArrayIterator;
 import gugit.om.utils.IDataIterator;
 import gugit.services.EntityServiceFacade;
-
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 
 /***
@@ -89,7 +89,7 @@ public class OM{
 		ReadContext readContext = new ReadContext(entityService, entityService);
 		
 		ArrayIterator<Object> row = new ArrayIterator<Object>();
-		LinkedList<E> result = new LinkedList<E>();		
+		List<E> result = new ArrayList<E>();		
 		E previousEntity = null;
 		for (Object[] array: dataRows){
 			row.setData(array); // reusing iterator object

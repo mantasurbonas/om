@@ -1,5 +1,6 @@
 package gugit.om.mapping;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,12 +37,12 @@ public class EntityWritePacket implements IWritePacket{
 	/***
 	 * the data that shall go into SELECT or UPDATE statements.
 	 */
-	private List<WritePacketElement> elements = new LinkedList<WritePacketElement>();
+	private List<WritePacketElement> elements = new ArrayList<WritePacketElement>();
 	
 	/***
 	 * describes values that have to be retrieved from other entities before persisting this entity.
 	 */
-	private List<IDependency> dependencies = new LinkedList<IDependency>();
+	private List<IDependency> dependencies = new ArrayList<IDependency>();
 	
 	/***
 	 * a delegate for accessing ID property of our entity.

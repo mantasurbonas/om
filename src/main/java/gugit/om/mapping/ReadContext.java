@@ -23,7 +23,7 @@ public class ReadContext {
 	
 	// read state
 	private FastStack currentlyReadEntities = new FastStack(); 
-	private Map<Integer, Object> previousReads = new HashMap<Integer, Object>();
+	private Map<Integer, Map<Object, Object>> previousReads = new HashMap<>();
 	
 	
 	public ReadContext(ISerializerFactory serializers, IEntityFactory factory){
@@ -43,12 +43,20 @@ public class ReadContext {
 		return currentlyReadEntities.find(type, id);
 	}
 	
-	public Object getCachedRead(int position){
-		return previousReads.get(position);
+	public Object getCachedRead(int position, Object id){
+		Map<Object, Object> dictionary = previousReads.get(position);
+		if (dictionary == null)
+			return null;
+		return dictionary.get(id);
 	}
 	
-	public void cacheRead(int position, Object obj){
-		previousReads.put(position, obj);
+	public void cacheRead(int position, Object id, Object obj){
+		Map <Object, Object> dictionary = previousReads.get(position);
+		if (dictionary == null){
+			dictionary = new HashMap<Object, Object>();
+			previousReads.put(position, dictionary);
+		}
+		dictionary.put(id,  obj);
 	}
 	
 	public void resetRead(int position){

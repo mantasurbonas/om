@@ -1,7 +1,7 @@
 package gugit.om.metadata;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /***
@@ -25,19 +25,19 @@ public class EntityMetadata<E> {
 	private Integer width = null;
 
 	// the fields that exist in the resultset but must be ignored when reading or persisting.
-	private LinkedList<IgnoreFieldMetadata> ignoreFields = new LinkedList<IgnoreFieldMetadata>();
+	private ArrayList<IgnoreFieldMetadata> ignoreFields = new ArrayList<IgnoreFieldMetadata>();
 	
 	// the "simple" columns like date, string or integers
-	private LinkedList<ColumnFieldMetadata> primitiveFields = new LinkedList<ColumnFieldMetadata>();
+	private ArrayList<ColumnFieldMetadata> primitiveFields = new ArrayList<ColumnFieldMetadata>();
 	
 	// the embedded objects. these are embedded into the resultset.
-	private LinkedList<ColumnFieldMetadata> pojoFields = new LinkedList<ColumnFieldMetadata>();
+	private ArrayList<ColumnFieldMetadata> pojoFields = new ArrayList<ColumnFieldMetadata>();
 	
 	// the embedded objects. These are searched from above the current position in the resultset.
-	private LinkedList<DetailCollectionFieldMetadata> pojoCollectionFields = new LinkedList<DetailCollectionFieldMetadata>();
+	private ArrayList<DetailCollectionFieldMetadata> pojoCollectionFields = new ArrayList<DetailCollectionFieldMetadata>();
 	
 	// references to parent (master) entities. these are searched to the left of the current position in the resultset.
-	private LinkedList<ColumnFieldMetadata> masterRefFields = new LinkedList<ColumnFieldMetadata>();
+	private ArrayList<ColumnFieldMetadata> masterRefFields = new ArrayList<ColumnFieldMetadata>();
 
 
 	public EntityMetadata(Class<E> entityClass, final String entityName, ColumnFieldMetadata idField) {

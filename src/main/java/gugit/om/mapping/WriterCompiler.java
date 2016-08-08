@@ -1,6 +1,6 @@
 package gugit.om.mapping;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import gugit.om.metadata.ColumnFieldMetadata;
@@ -345,7 +345,7 @@ public class WriterCompiler {
 	}
 
     public List<String> getRelatedClassNames(Class<?> entityClass) {
-        List<String> ret = new LinkedList<String>();
+        List<String> ret = new ArrayList<String>();
         
         ret.add(getIdAccessClassName(entityClass));
       
