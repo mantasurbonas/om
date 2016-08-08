@@ -3,10 +3,10 @@
   <groupId>gugit</groupId>
   <artifactId>gugit-om</artifactId>
   <versioning>
-    <release>v1.0.c</release>
+    <release>v1.0.d</release>
     <versions>
-      <version>v1.0.c</version>
+      <version>v1.0.d</version>
     </versions>
-    <lastUpdated>20160808170500</lastUpdated>
+    <lastUpdated>20160808210130</lastUpdated>
   </versioning>
 </metadata>
