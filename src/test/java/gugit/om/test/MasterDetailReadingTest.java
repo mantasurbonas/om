@@ -77,7 +77,7 @@ public class MasterDetailReadingTest {
 		Address address1 = persons.get(0).getPreviousAddresses().get(0);
 		Address address2 = persons.get(1).getPreviousAddresses().get(0);
 		
-		assertNotEquals(address1, address2);
+		assertEquals(address1, address2);
 	}
 	
 }

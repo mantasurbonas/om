@@ -26,11 +26,12 @@ public class ReaderCompiler {
 
 		+ "   %ENTITY_CLASS_NAME% entity = (%ENTITY_CLASS_NAME%)readContext.getCachedRead(position, id); \n"
 		
-		+ "   if (entity == null){ \n" // || !id.equals(entity.get%ID_SETTER_METHOD%())){ \n"
+		//+ "   if (entity == null|| !id.equals(entity.get%ID_SETTER_METHOD%())){ \n"
+		+ "   if (entity == null){ \n"
 		
 		+        " %RESET_CACHED_DETAILS% \n"
 		
-		+ "       entity = (%ENTITY_CLASS_NAME%)readContext.createEntity(%ENTITY_CLASS_NAME%.class);  \n"
+		+ "       entity = (%ENTITY_CLASS_NAME%)readContext.createEntity(position, %ENTITY_CLASS_NAME%.class);  \n"
 		+ "       entity.set%ID_SETTER_METHOD%( (%ID_TYPE%) id);  \n"
 		
 		+ "       %ADD_TO_READ_CONTEXT% \n"
@@ -76,14 +77,16 @@ public class ReaderCompiler {
 	
 	static final String POJO_FIELD_MAPPING_SNIPPLET_TEMPLATE = 
 			   " {  \n"
-			+  "   %DETAIL_TYPE% detail = ( %DETAIL_TYPE% ) readContext.getReaderFor(%DETAIL_TYPE%.class).read(row, position + %POJO_START_OFFSET%, readContext);  \n"
+			+  "   %DETAIL_TYPE% detail = ( %DETAIL_TYPE% ) readContext.getReaderFor(position + %POJO_START_OFFSET%, %DETAIL_TYPE%.class)\n"
+			+  "                                                       .read(row, position + %POJO_START_OFFSET%, readContext);  \n"
 			+  "   if (detail!=null) \n"
 			+  "      entity.set%FIELD_NAME%(detail);  \n"
 			+  " } \n";
 	
 	static final String ADD_DETAIL_TO_COLLECTION_SNIPPLET_TEMPLATE =
 		 	  " {  \n"
-			+ "    %DETAIL_TYPE% detail = ( %DETAIL_TYPE% ) readContext.getReaderFor(%DETAIL_TYPE%.class).read(row, position + %POJO_START_OFFSET%, readContext);  \n"
+			+ "    %DETAIL_TYPE% detail = ( %DETAIL_TYPE% ) readContext.getReaderFor(position + %POJO_START_OFFSET%, %DETAIL_TYPE%.class)\n"
+		 	+ "                                                         .read(row, position + %POJO_START_OFFSET%, readContext);  \n"
 			+ "    if ((detail != null) && !entity.get%FIELD_NAME%().contains(detail))  \n"
 			+ "        entity.get%FIELD_NAME%().add(detail);  \n"
 			+ " }  \n";

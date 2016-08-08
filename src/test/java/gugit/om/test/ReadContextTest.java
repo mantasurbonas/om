@@ -9,7 +9,7 @@ public class ReadContextTest {
 
 	@Test
 	public void test() {
-		ReadContext context = new ReadContext(null, null);
+		ReadContext context = new ReadContext(null);
 		context.entityIsBeingRead("Labas", 1);
 		context.entityIsBeingRead("Atia", 2);
 		
@@ -31,7 +31,7 @@ public class ReadContextTest {
 	public void performanceTest(){
 		long started = System.currentTimeMillis();
 		
-		ReadContext context = new ReadContext(null, null);
+		ReadContext context = new ReadContext(null);
 		int n = 1000000;
 		for (int i=0; i<n; i++){
 			context.entityIsBeingRead("Labas", 10);

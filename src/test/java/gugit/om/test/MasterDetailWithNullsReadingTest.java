@@ -39,7 +39,6 @@ public class MasterDetailWithNullsReadingTest {
 		assertEquals(3, farmers.get(0).getPigs().size());
 		
 		assertEquals(4, farmers.get(0).getDucks().size());
-		
 	}
 
 	@Test
@@ -55,13 +54,13 @@ public class MasterDetailWithNullsReadingTest {
 		resultset.add(new Object[]{ 1, 10, "First Cow",  null, null,        1002, "Third Duck"});
 		resultset.add(new Object[]{ 1, 10, "First Cow",  101, "Second Pig", 1003, "Fourth Duck"});
 
-		resultset.add(new Object[]{ 1, 10, "First Cow",  102, "Third Pig", 1000, "First Duck"});
+		resultset.add(new Object[]{ 1, 10, "First Cow",  102, "Third Pig", null, null});
 		resultset.add(new Object[]{ 1, 10, "First Cow",  102, "Third Pig", 1001, "Second Duck"});
 		resultset.add(new Object[]{ 1, 10, "First Cow",  102, "Third Pig", null, null});
 		resultset.add(new Object[]{ 1, 10, "First Cow",  102, "Third Pig", null, null});
 
 		List<Farmer> farmers = TestUtils.createObjectMapper().readEntities(resultset, Farmer.class);
-		
+
 		assertEquals(1, farmers.size());
 
 		assertEquals(1, farmers.get(0).getCows().size());
@@ -72,7 +71,7 @@ public class MasterDetailWithNullsReadingTest {
 		
 		assertEquals(4, farmers.get(0).getDucks().size());
 		assertEquals("Fourth Duck", farmers.get(0).getDucks().get(3).getName());
-		
+
 	}
 
 	

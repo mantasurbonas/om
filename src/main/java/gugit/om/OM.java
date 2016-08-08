@@ -60,7 +60,7 @@ public class OM{
 	}
 		
 	public <E> E readEntity(IDataIterator<Object> array, Class<E> entityClass){
-		return readEntity(array, entityClass, new ReadContext(entityService, entityService));
+		return readEntity(array, entityClass, new ReadContext(entityService));
 	}
 	
 	protected <E> E readEntity(IDataIterator<Object> array, Class<E> entityClass, ReadContext readContext){
@@ -73,7 +73,7 @@ public class OM{
 	}
 
 	public <E> E leftJoin(E entity, final String property, IDataIterator<Object> array){
-		return leftJoin(entity, property, array, new ReadContext(entityService, entityService));
+		return leftJoin(entity, property, array, new ReadContext(entityService));
 	}
 	
 	public <E> E leftJoin(E entity, final String property, IDataIterator<Object> array, ReadContext readContext){
@@ -86,7 +86,7 @@ public class OM{
 	
 	public <E> List<E> readEntities(List<Object []> dataRows, Class<E> entityClass){		
 		ISerializer<E> serializer = (ISerializer<E>)entityService.getSerializerFor(entityClass);
-		ReadContext readContext = new ReadContext(entityService, entityService);
+		ReadContext readContext = new ReadContext(entityService);
 		
 		ArrayIterator<Object> row = new ArrayIterator<Object>();
 		List<E> result = new ArrayList<E>();		
@@ -95,6 +95,7 @@ public class OM{
 			row.setData(array); // reusing iterator object
 			
 			E entity = serializer.read(row, 0, readContext);
+
 			if (entity != previousEntity){
 				result.add(entity);
 				previousEntity = entity;
@@ -115,7 +116,7 @@ public class OM{
 		Iterator<E> it = entities.iterator();
 		E entity = it.next();
 		
-		ReadContext readContext = new ReadContext(entityService, entityService);
+		ReadContext readContext = new ReadContext(entityService);
 		ArrayIterator<Object> row = new ArrayIterator<Object>();
 		for(Object[] array: dataRows){
 			while(!array[0].equals(serializer.getID(entity)))

@@ -60,7 +60,7 @@ public class MergeTest {
 		int propIndex = serializer.getPropertyIndex("currentAddress");
 		IDataIterator<Object> array = new ArrayIterator<Object>(new Object[]
 				{33, 44, "New Zealand", "Nelson", "Elm st 142", 33});
-		serializer.leftJoin(person, propIndex , array , 0, new ReadContext(serviceFacade, serviceFacade));
+		serializer.leftJoin(person, propIndex , array , 0, new ReadContext(serviceFacade));
 		
 		assertEquals(person.getCurrentAddress().getId().intValue(), 44);
 		assertEquals(person.getCurrentAddress().getCity(), "Nelson");
@@ -81,7 +81,7 @@ public class MergeTest {
 		ArrayIterator<Object> array = new ArrayIterator<Object>();
 			array.setData(new Object[]{33, 44, "New Zealand", "Nelson", "Elm st 142", 33});
 			
-		ReadContext readContext = new ReadContext(serviceFacade, serviceFacade);
+		ReadContext readContext = new ReadContext(serviceFacade);
 		serializer.leftJoin(person, propIndex , array , 0, readContext);
 		
 		assertEquals(person.getPreviousAddresses().size(), 1);
