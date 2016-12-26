@@ -14,7 +14,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<javassist-version>3.13.0-GA</javassist-version>
+		<javassist-version>3.16.1-GA</javassist-version>
 		<github.global.server>github</github.global.server>
 		<author>mantas.urbonas@gmail.com</author>
 		<comitter>mantas.urbonas@gmail.com</comitter>
@@ -72,8 +72,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>2.3.2</version>
 				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
+					<source>1.8</source>
+					<target>1.8</target>
 				</configuration>
 			</plugin>	
 						
