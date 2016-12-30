@@ -1,7 +1,6 @@
 package gugit.om.metadata;
 
 import java.util.ArrayList;
-import java.util.ArrayList;
 import java.util.List;
 
 /***
