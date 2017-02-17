@@ -141,24 +141,23 @@ public class WriterCompiler {
 	}
 	
 	public <T> void addWriterMethods(CtClass resultClass, EntityMetadata<T> entityMetadata) throws Exception{
-		
-		if (entityMetadata.isReadonly()){
-			createEmptyWriteMethod(entityMetadata, resultClass);
-			return;
-		}
-		
+				
 		Class<T> entityClass = entityMetadata.getEntityClass();
 		
 		createIDAccessClass(entityClass, entityMetadata.getIdField());
 		createIdAccessField(entityClass, resultClass);
 
-		for (ColumnFieldMetadata masterInfo: entityMetadata.getRefFields()){
-			EntityMetadata<?> masterMeta = metadataFactory.getMetadataFor(masterInfo.getType());
-			createDependencyClass(entityClass, masterMeta, masterInfo);
-			createDependencyField(entityClass, resultClass, masterMeta, masterInfo);
+		if (entityMetadata.isReadonly()){
+			createEmptyWriteMethod(entityMetadata, resultClass);
+		}else{
+			for (ColumnFieldMetadata masterInfo: entityMetadata.getRefFields()){
+				EntityMetadata<?> masterMeta = metadataFactory.getMetadataFor(masterInfo.getType());
+				createDependencyClass(entityClass, masterMeta, masterInfo);
+				createDependencyField(entityClass, resultClass, masterMeta, masterInfo);
+			}
+			
+			createWriteMethod(entityMetadata, resultClass);
 		}
-		
-		createWriteMethod(entityMetadata, resultClass);
 		
 		createGetIdAccessorMethod(resultClass);
 	}
