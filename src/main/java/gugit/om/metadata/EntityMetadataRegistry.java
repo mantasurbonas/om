@@ -59,6 +59,7 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 
 		return new EntityMetadata<T>(entityClass, 
 									determineEntityName(entityClass), 
+									determineEntityReadonly(entityClass),
 									idMetadata);
 	}
 
@@ -190,6 +191,15 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 			return clazz.getSimpleName();
 		
 		return annotation.name().trim();
+	}
+	
+	private static boolean determineEntityReadonly(Class<?> clazz){
+		Entity annotation = clazz.getAnnotation(Entity.class);
+		
+		if (annotation == null)
+			return false;
+		
+		return annotation.readOnly();		
 	}
 
 	

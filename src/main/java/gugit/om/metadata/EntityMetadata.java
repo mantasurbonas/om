@@ -16,6 +16,9 @@ public class EntityMetadata<E> {
 	// the user-provided entity name, if different from its class name (for persisting)
 	private String entityName;
 		
+	// will not generate writers if entity annotated as readonly
+	private boolean readonly = false;
+	
 	// one special annotation - for ID field, specifically
 	private ColumnFieldMetadata idField;
 
@@ -39,10 +42,12 @@ public class EntityMetadata<E> {
 	private ArrayList<ColumnFieldMetadata> masterRefFields = new ArrayList<ColumnFieldMetadata>();
 
 
-	public EntityMetadata(Class<E> entityClass, final String entityName, ColumnFieldMetadata idField) {
+	public EntityMetadata(Class<E> entityClass, final String entityName, Boolean readonly, ColumnFieldMetadata idField) {
 		this.entityClass = entityClass;
 		this.entityName = entityName;		
 		this.idField = idField;
+		if (readonly != null && readonly==true)
+			this.readonly = true;
 	}
 	
 	public Class<E> getEntityClass() {
@@ -110,6 +115,14 @@ public class EntityMetadata<E> {
 
 	public void addIgnoreField(IgnoreFieldMetadata field) {
 		ignoreFields.add(field);
+	}
+
+	public boolean isReadonly() {
+		return readonly;
+	}
+
+	public void setReadonly(boolean readonly) {
+		this.readonly = readonly;
 	}
 	
 }

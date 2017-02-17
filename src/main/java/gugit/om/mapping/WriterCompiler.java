@@ -50,6 +50,9 @@ public class WriterCompiler {
 	private final String GET_ID_ACCESSOR_TEMPLATE=
 		"  public IPropertyAccessor getIdAccessor(){ return idAccess; } \n";
 	
+	private final String WRITE_EMPTY_METHOD_TEMPLATE = 
+			"public void write(Object obj, WriteBatch batch, WriteContext writeContext){}";
+	
 	private final String WRITE_METHOD_TEMPLATE = 
 		  " public void write(Object obj, WriteBatch batch, WriteContext writeContext){\n"
 		
@@ -138,6 +141,12 @@ public class WriterCompiler {
 	}
 	
 	public <T> void addWriterMethods(CtClass resultClass, EntityMetadata<T> entityMetadata) throws Exception{
+		
+		if (entityMetadata.isReadonly()){
+			createEmptyWriteMethod(entityMetadata, resultClass);
+			return;
+		}
+		
 		Class<T> entityClass = entityMetadata.getEntityClass();
 		
 		createIDAccessClass(entityClass, entityMetadata.getIdField());
@@ -257,6 +266,14 @@ public class WriterCompiler {
 										.replace("WRITE_MASTER_DEPENDENCIES_SNIPPLET", createMasterRefSnipplet(entityMetadata.getRefFields()) )
 										.dump(DUMP_FLAG)
 										.getResult();
+
+		resultClass.addMethod(CtNewMethod.make(writeMethodSrc, resultClass));
+	}
+	
+	private void createEmptyWriteMethod(EntityMetadata<?> entityMetadata, CtClass resultClass) throws Exception{
+		String writeMethodSrc = new StringTemplate(WRITE_EMPTY_METHOD_TEMPLATE)
+				.dump(DUMP_FLAG)
+				.getResult();
 
 		resultClass.addMethod(CtNewMethod.make(writeMethodSrc, resultClass));
 	}
