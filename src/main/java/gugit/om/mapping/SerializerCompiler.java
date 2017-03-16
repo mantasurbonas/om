@@ -2,11 +2,16 @@ package gugit.om.mapping;
 
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.IEntityMetadataFactory;
+import javassist.CannotCompileException;
 import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.NotFoundException;
 
 public class SerializerCompiler {	
 	
@@ -16,6 +21,8 @@ public class SerializerCompiler {
 	private WriterCompiler writerCompiler;
 	private ReaderCompiler readerCompiler;
 	private MergerCompiler mergerCompiler;
+
+	private static final Logger logger = LogManager.getLogger();
 	
 	public SerializerCompiler(IEntityMetadataFactory metadataFactory){
 		this.metadataFactory = metadataFactory;
@@ -42,18 +49,38 @@ public class SerializerCompiler {
        
         try{
             return (Class<ISerializer<T>>) Class.forName(serializerClassName);
-        }catch(Exception e){
-            System.out.println("failed finding a serializer for class "+entityClass+" in classloader, getting it from class pool");
-
-            ClassLoader classLoader = getClass().getClassLoader();
-            
-            List<String> relatedClasses = writerCompiler.getRelatedClassNames(entityClass); 
-            for (String relatedClass: relatedClasses)
-                pool.get(relatedClass).toClass(classLoader, null);
-            
-            return (Class<ISerializer<T>>) pool.get(serializerClassName).toClass(classLoader, null);
+        }catch(Exception e){        	
+            return getExistingSerializerClassFromClassloader(entityClass, serializerClassName, getClass().getClassLoader());
         }        
     }
+
+   @SuppressWarnings("unchecked")
+   private <T> Class<ISerializer<T>> getExistingSerializerClassFromClassloader(Class<T> entityClass, 
+		   																		String serializerClassName, 
+		   																		ClassLoader classLoader)
+		   																		throws CannotCompileException, NotFoundException {
+		synchronized(classLoader){
+		    try{
+		    	Class<ISerializer<T>> ret= (Class<ISerializer<T>>) Class.forName(serializerClassName, true, classLoader);
+		    	if (ret != null){
+		    		logger.error("race condition avoided: retrieved a class in classloader on a second try");
+		    		return ret;
+		    	}
+		    }catch(Exception ee){
+		    	// expected
+		    }
+		    
+		    List<String> relatedClasses = writerCompiler.getRelatedClassNames(entityClass); 
+		    for (String relatedClass: relatedClasses)
+		    	try{
+		    		pool.get(relatedClass).toClass(classLoader, null);
+		    	}catch(Exception eee){
+		    		logger.error("Failed loading related class "+relatedClass+" for "+entityClass, eee );
+		    	}
+		    
+		    return (Class<ISerializer<T>>) pool.get(serializerClassName).toClass(classLoader, null);
+		}
+	}
 	
 	@SuppressWarnings("unchecked")
 	public <T> Class<ISerializer<T>> makeSerializerClass(Class<T> entityClass) throws Exception {
@@ -68,7 +95,7 @@ public class SerializerCompiler {
 		    return getExistingSerializerClass(entityClass);
 //			return (Class<ISerializer<T>>)Class.forName(generatedClassName);
 		
-		System.out.println("compiling serializer class for "+entityClassName);
+		logger.debug("compiling serializer class for "+entityClassName);
 		
 		resultClass = pool.makeClass(generatedClassName);
 		resultClass.addInterface( pool.get("gugit.om.mapping.ISerializer") );

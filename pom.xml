@@ -7,7 +7,7 @@
 
 	<groupId>gugit</groupId>
 	<artifactId>gugit-om</artifactId>
-	<version>v1.0.h</version>
+	<version>v1.0.i</version>
 	<packaging>jar</packaging>
 
 	<name>Gugit Generic Object Mapping</name>

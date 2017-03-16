@@ -3,6 +3,10 @@ package gugit.om.wrapping;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
@@ -23,6 +27,9 @@ public class WrappedEntityGenerator {
 	private static final String DIRTY_FLAG_FIELD_SRC = "private boolean $$dirty = true;";
 
 	private static Map<Class<?>, Class<?>> cache = new HashMap<Class<?>, Class<?>>();
+	
+
+	private static final Logger logger = LogManager.getLogger();
 	
 	private ClassPool pool;
 	
@@ -58,11 +65,38 @@ public class WrappedEntityGenerator {
 	@SuppressWarnings("unchecked")
 	public <T> Class<? extends T> getExistingWrapperClass(Class<T> entityClass) throws Exception {
 		String wrappedClassName = getGeneratedClassName(entityClass.getCanonicalName());
+		
+		ClassLoader classLoader = getClass().getClassLoader();
+		
 		try{
-			return (Class<? extends T>) Class.forName(wrappedClassName);
+			return (Class<? extends T>) Class.forName(wrappedClassName, true, classLoader);
 		}catch(Exception e){
-			System.out.println("failed finding a class "+entityClass+" in classloader, getting it from class pool");
-			return (Class<? extends T>) pool.get( wrappedClassName).toClass(getClass().getClassLoader(), null);
+			
+			logger.debug("failed finding a class "+entityClass+" in classloader (although classpool has it), getting it from class pool");
+			
+			return getExistingWrapperClassFromClassloader(entityClass, wrappedClassName, classLoader);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> Class<? extends T> getExistingWrapperClassFromClassloader(Class<T> entityClass, 
+																		String wrappedClassName, 
+																		ClassLoader classLoader)
+																		throws CannotCompileException, NotFoundException {
+		
+		synchronized(classLoader){
+		
+			try{
+				Class<? extends T> ret = (Class<? extends T>) Class.forName(wrappedClassName, true, classLoader);
+				if (ret != null){
+					logger.debug("avoided race condition when loading class "+entityClass);
+					return ret;
+				}
+			}catch(Exception e){
+				// expected
+			}
+			
+			return (Class<? extends T>) pool.get( wrappedClassName).toClass(classLoader, null);
 		}
 	}
 
