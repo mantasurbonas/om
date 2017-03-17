@@ -1,12 +1,8 @@
 package gugit.om.wrapping;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
@@ -26,95 +22,74 @@ public class WrappedEntityGenerator {
 		
 	private static final String DIRTY_FLAG_FIELD_SRC = "private boolean $$dirty = true;";
 
-	private static Map<Class<?>, Class<?>> cache = new HashMap<Class<?>, Class<?>>();
-	
 
 	private static final Logger logger = LogManager.getLogger();
 	
 	private ClassPool pool;
+	private ClassLoader classLoader = getClass().getClassLoader();
 	
-	public WrappedEntityGenerator(){
+	
+	private static WrappedEntityGenerator instance = new WrappedEntityGenerator();
+	
+	private WrappedEntityGenerator(){
 		this.pool = ClassPool.getDefault();
 		this.pool.importPackage("gugit");
 	}
 	
-	@SuppressWarnings("unchecked")
-	public <T> Class<T> unwrap(Class<? extends T> wrappedClass){
-		wrappedClass = (Class<? extends T>) wrappedClass.getSuperclass();
-		return (Class<T>)wrappedClass;
+	public static WrappedEntityGenerator getInstance(){
+		return instance;
 	}
 	
-	@SuppressWarnings("unchecked")
 	public <T> Class<? extends T> getWrappedEntityClass(Class<? extends T> entityClass)throws Exception{
 		if (entityClass.isInstance(IWrappedEntity.class))
 			entityClass = unwrap(entityClass);
 		
-		if (doesWrapperClassExist(entityClass))
-			return getExistingWrapperClass(entityClass);
-		
-		if (!cache.containsKey(entityClass))
-			cache.put(entityClass, generateWrappedClass(entityClass));
-		
-		return (Class<? extends T>) cache.get(entityClass);
-	}
-
-	public boolean doesWrapperClassExist(Class<?> entityClass) {
-		return pool.getOrNull( getGeneratedClassName(entityClass.getCanonicalName())) != null;
-	}
-
-	@SuppressWarnings("unchecked")
-	public <T> Class<? extends T> getExistingWrapperClass(Class<T> entityClass) throws Exception {
-		String wrappedClassName = getGeneratedClassName(entityClass.getCanonicalName());
-		
-		ClassLoader classLoader = getClass().getClassLoader();
-		
-		try{
-			return (Class<? extends T>) Class.forName(wrappedClassName, true, classLoader);
-		}catch(Exception e){
-			
-			logger.debug("failed finding a class "+entityClass+" in classloader (although classpool has it), getting it from class pool");
-			
-			return getExistingWrapperClassFromClassloader(entityClass, wrappedClassName, classLoader);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> Class<? extends T> getExistingWrapperClassFromClassloader(Class<T> entityClass, 
-																		String wrappedClassName, 
-																		ClassLoader classLoader)
-																		throws CannotCompileException, NotFoundException {
-		
-		synchronized(classLoader){
-		
-			try{
-				Class<? extends T> ret = (Class<? extends T>) Class.forName(wrappedClassName, true, classLoader);
-				if (ret != null){
-					logger.debug("avoided race condition when loading class "+entityClass);
-					return ret;
-				}
-			}catch(Exception e){
-				// expected
-			}
-			
-			return (Class<? extends T>) pool.get( wrappedClassName).toClass(classLoader, null);
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> Class<? extends T> generateWrappedClass(Class<T> entityClass) throws Exception {
 		String generatedClassName = getGeneratedClassName(entityClass.getCanonicalName());
 		
-		CtClass resultClass = pool.getOrNull(generatedClassName);
+		Class<T> knownClass = getKnownClass(generatedClassName);
+		if (knownClass != null)
+			return knownClass;
+		
+		synchronized(this){
+			knownClass = getKnownClass(generatedClassName);
+			if (knownClass != null)
+				return knownClass;
+			
+			Class<T> classFromPool = addClassFromPoolToClassloader(generatedClassName);
+			if (classFromPool != null)
+				return classFromPool;
+			
+			return generateWrappedClass(entityClass, generatedClassName);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> Class<T> getKnownClass(String className){
+		try{
+			return (Class<T>) classLoader.loadClass(className);
+		}catch(Exception e){
+			return null;
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T> Class<T> addClassFromPoolToClassloader(String className) throws Exception{
+		CtClass resultClass = pool.getOrNull(className);
 		if (resultClass != null)
-		    return getExistingWrapperClass(entityClass);
+			return (Class<T>) pool.get( className).toClass(classLoader, null);
 		
-		System.out.println("Generating wrapper for entity class "+entityClass);
+		return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T> Class<? extends T> generateWrappedClass(Class<T> superClass, String generatedClassName) throws Exception {
+		logger.debug("Generating wrapper for entity class "+superClass);
 		
-		CtClass superClass = pool.getOrNull(entityClass.getCanonicalName());
-		if (superClass == null)
-			throw new RuntimeException("Entity class "+entityClass.getCanonicalName()+" could not be found.");
+		CtClass ctSuperClass = pool.getOrNull(superClass.getCanonicalName());
+		if (ctSuperClass == null)
+			throw new RuntimeException("Entity class "+superClass.getCanonicalName()+" could not be found.");
 		
-		resultClass = pool.makeClass(generatedClassName, superClass);
+		CtClass resultClass = pool.makeClass(generatedClassName, ctSuperClass);
 		resultClass.addInterface( pool.get(WRAPPED_ENTITY_INTERFACE_CLASS) );
 
 		resultClass.addField(CtField.make(DIRTY_FLAG_FIELD_SRC, resultClass));
@@ -122,7 +97,7 @@ public class WrappedEntityGenerator {
 		resultClass.addMethod(CtNewMethod.make(CLEAR_DIRTY_METHOD_SRC, resultClass));
 		resultClass.addMethod(CtNewMethod.make(IS_DIRTY_METHOD_SRC, resultClass));
 
-		CtMethod[] methods = superClass.getMethods();
+		CtMethod[] methods = ctSuperClass.getMethods();
 		for (CtMethod m: methods){
 			
 			if (m.getDeclaringClass().getName().equals("java.lang.Object"))
@@ -139,6 +114,12 @@ public class WrappedEntityGenerator {
 		}
 		
 		return resultClass.toClass();
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> Class<T> unwrap(Class<? extends T> wrappedClass){
+		wrappedClass = (Class<? extends T>) wrappedClass.getSuperclass();
+		return (Class<T>)wrappedClass;
 	}
 
 	private static String createMethodSrc(CtMethod m) throws NotFoundException{

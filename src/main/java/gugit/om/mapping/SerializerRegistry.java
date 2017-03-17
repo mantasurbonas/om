@@ -42,18 +42,14 @@ public class SerializerRegistry implements ISerializerFactory{
 				serializersCache.put(entityClass, serializer);			
 				return serializer;
 			} catch (Exception e) {
+				e.printStackTrace();
 				throw new RuntimeException(e);
 			}
 		}
 	}
 	
 	private synchronized <T> ISerializer<T> makeSerializer(Class<T> entityClass) throws Exception {
-		Class<ISerializer<T>> serializerClass;
-		if (serializerCompiler.doesSerializerClassExist(entityClass)) {
-			serializerClass = serializerCompiler.getExistingSerializerClass(entityClass);
-		}else{		
-			serializerClass = serializerCompiler.makeSerializerClass(entityClass);
-		}
+		Class<ISerializer<T>> serializerClass = serializerCompiler.getSerializerClassFor(entityClass);
 		
 		return serializerClass.newInstance();
 	}

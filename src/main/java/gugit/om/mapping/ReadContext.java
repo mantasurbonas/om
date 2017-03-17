@@ -20,7 +20,7 @@ public class ReadContext {
 	private ISerializerFactory serializers;
 	
 	// needed to create new (wrapped) entity instances
-	private static WrappedEntityGenerator generator = new WrappedEntityGenerator();
+	private static WrappedEntityGenerator generator = WrappedEntityGenerator.getInstance();
 	
 	// read state
 	private FastStack currentlyReadEntities = new FastStack(); 

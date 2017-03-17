@@ -2,7 +2,7 @@ package gugit.om.wrapping;
 
 public class EntityFactoryImpl implements IEntityFactory{
 
-	private static WrappedEntityGenerator generator = new WrappedEntityGenerator();
+	private static WrappedEntityGenerator generator = WrappedEntityGenerator.getInstance();
 	
 	public <E> E create(Class<E> entityClass){
 		try{
