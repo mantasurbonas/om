@@ -77,12 +77,12 @@ public class SerializerCompiler {
 	    List<String> relatedClasses = writerCompiler.getRelatedClassNames(entityClass); 
 	    for (String relatedClass: relatedClasses)
 	    	try{
-	    		pool.get(relatedClass).toClass(classLoader, null);
+	    		pool.get(relatedClass).toClass(classLoader, entityClass.getProtectionDomain());
 	    	}catch(Exception eee){
 	    		logger.error("Failed loading related class "+relatedClass+" for "+entityClass, eee );
 	    	}
 		    
-	    return (Class<ISerializer<T>>) pool.get(serializerClassName).toClass(classLoader, null);
+	    return (Class<ISerializer<T>>) pool.get(serializerClassName).toClass(classLoader, entityClass.getProtectionDomain());
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -99,7 +99,7 @@ public class SerializerCompiler {
 			if (knownClass != null)
 				return knownClass;
 			
-			return (Class<ISerializer<T>>) resultClass.toClass(classLoader, null);
+			return (Class<ISerializer<T>>) resultClass.toClass(classLoader, entityClass.getProtectionDomain());
 		}
 		
 		resultClass = pool.makeClass(serializerClassName);
@@ -109,7 +109,7 @@ public class SerializerCompiler {
 		readerCompiler.addReaderMethods(resultClass, entityMetadata);
 		mergerCompiler.addMergerMethods(resultClass, entityMetadata);
 		
-		return resultClass.toClass();
+		return resultClass.toClass(classLoader, entityClass.getProtectionDomain());
 	}	
 	
 

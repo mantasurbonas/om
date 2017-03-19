@@ -76,7 +76,7 @@ public class WrappedEntityGenerator {
 	private <T> Class<T> addClassFromPoolToClassloader(String className) throws Exception{
 		CtClass resultClass = pool.getOrNull(className);
 		if (resultClass != null)
-			return (Class<T>) pool.get( className).toClass(classLoader, null);
+			return (Class<T>) pool.get( className).toClass(classLoader, getClass().getProtectionDomain());
 		
 		return null;
 	}
@@ -113,7 +113,7 @@ public class WrappedEntityGenerator {
 			resultClass.addMethod(CtNewMethod.make(src, resultClass));
 		}
 		
-		return resultClass.toClass();
+		return resultClass.toClass(classLoader, superClass.getProtectionDomain());
 	}
 
 	@SuppressWarnings("unchecked")
