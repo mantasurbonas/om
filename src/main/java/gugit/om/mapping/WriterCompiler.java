@@ -140,11 +140,11 @@ public class WriterCompiler {
 		this.metadataFactory = metadataFactory;
 	}
 	
-	public <T> void addWriterMethods(CtClass resultClass, EntityMetadata<T> entityMetadata) throws Exception{
+	public <T> void addWriterMethods(CtClass resultClass, EntityMetadata<T> entityMetadata, ClassLoader classLoader) throws Exception{
 				
 		Class<T> entityClass = entityMetadata.getEntityClass();
 		
-		createIDAccessClass(entityClass, entityMetadata.getIdField());
+		createIDAccessClass(entityClass, entityMetadata.getIdField(), classLoader);
 		createIdAccessField(entityClass, resultClass);
 
 		if (entityMetadata.isReadonly()){
@@ -152,7 +152,7 @@ public class WriterCompiler {
 		}else{
 			for (ColumnFieldMetadata masterInfo: entityMetadata.getRefFields()){
 				EntityMetadata<?> masterMeta = metadataFactory.getMetadataFor(masterInfo.getType());
-				createDependencyClass(entityClass, masterMeta, masterInfo);
+				createDependencyClass(entityClass, masterMeta, masterInfo, classLoader);
 				createDependencyField(entityClass, resultClass, masterMeta, masterInfo);
 			}
 			
@@ -170,7 +170,7 @@ public class WriterCompiler {
 		return entityClass.getCanonicalName()+"$$GUGIT$$IdAccessor";
 	}
 	
-	private void createIDAccessClass(Class<?> entityClass, FieldMetadata idField) throws Exception{
+	private void createIDAccessClass(Class<?> entityClass, FieldMetadata idField, ClassLoader classLoader) throws Exception{
 		CtClass accClass = pool.makeClass(getIdAccessClassName(entityClass));
 		accClass.addInterface(pool.get("gugit.om.mapping.IPropertyAccessor"));
 		
@@ -178,7 +178,7 @@ public class WriterCompiler {
 		
 		accClass.addMethod(CtNewMethod.make(createSetValueMethod(entityClassName, idField), accClass));
 		accClass.addMethod(CtNewMethod.make(createGetValueMethod(entityClassName, idField), accClass));
-		accClass.toClass();
+		accClass.toClass(classLoader, entityClass.getProtectionDomain());
 	}
 	
 	private void createIdAccessField(Class<?> entityClass, CtClass resultClass) throws CannotCompileException {
@@ -220,7 +220,7 @@ public class WriterCompiler {
 		resultClass.addField(CtField.make(masterRefFieldSrc, resultClass));
 	}
 
-	private void createDependencyClass(Class<?> entityClass, EntityMetadata<?> masterEntityMeta, ColumnFieldMetadata masterInfo) throws Exception{
+	private void createDependencyClass(Class<?> entityClass, EntityMetadata<?> masterEntityMeta, ColumnFieldMetadata masterInfo, ClassLoader classLoader) throws Exception{
 		String entityClassName = entityClass.getCanonicalName();
 		
 		String masterRefName = masterInfo.getName();
@@ -236,7 +236,7 @@ public class WriterCompiler {
 																masterId,
 																masterIdType,
 																masterRefCol), depClass));
-		depClass.toClass();
+		depClass.toClass(classLoader, entityClass.getProtectionDomain());
 	}
 
   	private String createSolveMethodSrc(String entityClassName, 

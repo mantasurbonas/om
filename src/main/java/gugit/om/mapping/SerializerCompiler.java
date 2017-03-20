@@ -105,7 +105,7 @@ public class SerializerCompiler {
 		resultClass = pool.makeClass(serializerClassName);
 		resultClass.addInterface( pool.get("gugit.om.mapping.ISerializer") );
 
-		writerCompiler.addWriterMethods(resultClass, entityMetadata);
+		writerCompiler.addWriterMethods(resultClass, entityMetadata, classLoader);
 		readerCompiler.addReaderMethods(resultClass, entityMetadata);
 		mergerCompiler.addMergerMethods(resultClass, entityMetadata);
 		
