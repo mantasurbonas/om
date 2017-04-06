@@ -1,14 +1,13 @@
 package gugit.om.wrapping;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
 import javassist.CtMethod;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WrappedEntityGenerator {
 
@@ -23,7 +22,7 @@ public class WrappedEntityGenerator {
 	private static final String DIRTY_FLAG_FIELD_SRC = "private boolean $$dirty = true;";
 
 
-	private static final Logger logger = LogManager.getLogger();
+	private static final Logger logger = LoggerFactory.getLogger(WrappedEntityGenerator.class);
 	
 	private ClassPool pool;
 	private ClassLoader classLoader = getClass().getClassLoader();

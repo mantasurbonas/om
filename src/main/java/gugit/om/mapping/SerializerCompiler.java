@@ -2,14 +2,14 @@ package gugit.om.mapping;
 
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import gugit.om.metadata.EntityMetadata;
 import gugit.om.metadata.IEntityMetadataFactory;
 import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SerializerCompiler {	
 	
@@ -22,7 +22,7 @@ public class SerializerCompiler {
 	private ReaderCompiler readerCompiler;
 	private MergerCompiler mergerCompiler;
 
-	private static final Logger logger = LogManager.getLogger();
+	private static final Logger logger = LoggerFactory.getLogger(SerializerCompiler.class);
 	
 	public SerializerCompiler(IEntityMetadataFactory metadataFactory){
 		this.metadataFactory = metadataFactory;
