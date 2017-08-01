@@ -15,6 +15,7 @@ import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
+import javassist.CtMethod;
 import javassist.CtNewMethod;
 import javassist.NotFoundException;
 
@@ -255,6 +256,7 @@ public class WriterCompiler {
 	}
 
 	private void createWriteMethod(EntityMetadata<?> entityMetadata, CtClass resultClass) throws Exception {
+		
 		String writeMethodSrc = new StringTemplate(WRITE_METHOD_TEMPLATE)
 										.replace("ID_COLUMN_NAME", StringUtils.escape(entityMetadata.getIdField().getColumnName()))
 										.replace("ID_FIELD_NAME", StringUtils.capitalize(entityMetadata.getIdField().getName()))
@@ -281,27 +283,36 @@ public class WriterCompiler {
 		StringBuilder src = new StringBuilder();
 		
 		for (ColumnFieldMetadata fieldInfo: primitiveFields)
-			src.append(new StringTemplate(WRITE_PRIMITIVE_PROPERTY_SNIPPLET)
-							.replace("COLUMN_NAME", StringUtils.escape(fieldInfo.getColumnName()))
-							.replace("PROPERTY_NAME", StringUtils.capitalize(fieldInfo.getName()))
-							.getResult());
+			if (fieldInfo.isReadOnly() == false)
+				src.append(new StringTemplate(WRITE_PRIMITIVE_PROPERTY_SNIPPLET)
+								.replace("COLUMN_NAME", StringUtils.escape(fieldInfo.getColumnName()))
+								.replace("PROPERTY_NAME", StringUtils.capitalize(fieldInfo.getName()))
+								.getResult());
+		
 		
 		return src.toString();
 	}
 
 	private String createPojoPropsSnipplet(List<ColumnFieldMetadata> pojoFields) throws NotFoundException {
 		StringBuilder src = new StringBuilder();
+		
 		for (ColumnFieldMetadata fieldInfo: pojoFields)
-			src.append(new StringTemplate(WRITE_POJO_PROPERTY_SNIPPLET)
-							.replace("PROPERTY_NAME", StringUtils.capitalize(fieldInfo.getName()))
-							.replace("POJO_TYPE", fieldInfo.getType().getCanonicalName())
-							.getResult());
+			if (fieldInfo.isReadOnly() == false)
+				src.append(new StringTemplate(WRITE_POJO_PROPERTY_SNIPPLET)
+								.replace("PROPERTY_NAME", StringUtils.capitalize(fieldInfo.getName()))
+								.replace("POJO_TYPE", fieldInfo.getType().getCanonicalName())
+								.getResult());
+		
 		return src.toString();
 	}
 
 	private String createPojoColectionsSnipplet(Class<?> entityClass, List<DetailCollectionFieldMetadata> pojoCollectionFields) throws NotFoundException {
 		StringBuilder src = new StringBuilder();
+		
 		for (DetailCollectionFieldMetadata fieldInfo: pojoCollectionFields){
+			if (fieldInfo.isReadOnly())
+				continue;
+			
 			if (fieldInfo instanceof ManyToManyFieldMetadata){
 				ManyToManyFieldMetadata m2mField = (ManyToManyFieldMetadata) fieldInfo;
 				
@@ -331,7 +342,11 @@ public class WriterCompiler {
 
 	private String createMasterRefSnipplet(List<ColumnFieldMetadata> masterReferenceFields) throws NotFoundException {
 		StringBuilder src = new StringBuilder();
+		
 		for (ColumnFieldMetadata masterRef: masterReferenceFields){
+			if (masterRef.isReadOnly())
+				continue;
+			
 			EntityMetadata<?> masterEntityMeta = metadataFactory.getMetadataFor(masterRef.getType());
 			src.append(new StringTemplate(WRITE_MASTER_DEPENDENCY_SNIPPLET)
 							.replace("MASTER_ACCESSOR_NAME", StringUtils.capitalize(masterRef.getName()))

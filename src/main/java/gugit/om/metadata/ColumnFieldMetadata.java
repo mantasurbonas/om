@@ -10,11 +10,14 @@ public class ColumnFieldMetadata extends FieldMetadata{
 	// field position relative to ID field, which is at position zero
 	private int columnOffset;
 	
-	public ColumnFieldMetadata(Field field, String columnName, int columnOffset) {
+	private boolean readOnly;
+	
+	public ColumnFieldMetadata(Field field, String columnName, boolean readOnly, int columnOffset) {
 		super(field);
 		
 		this.columnName = columnName;
 		this.columnOffset = columnOffset;
+		this.readOnly = readOnly;
 	}
 	
 	public String getColumnName() {
@@ -25,5 +28,7 @@ public class ColumnFieldMetadata extends FieldMetadata{
 		return columnOffset;
 	}
 
-
+	public boolean isReadOnly(){
+		return readOnly;
+	}
 }

@@ -16,4 +16,6 @@ public @interface Pojo {
 	 * (same behaviour as masterRef annotation)
 	 */
 	String myColumn() default "";
+	
+	boolean readOnly() default false;
 }

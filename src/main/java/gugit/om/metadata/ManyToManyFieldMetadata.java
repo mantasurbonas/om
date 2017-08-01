@@ -8,9 +8,13 @@ public class ManyToManyFieldMetadata  extends DetailCollectionFieldMetadata{
 	private String othColumnName;
 	private String tableName;
 
-	public ManyToManyFieldMetadata(Field field, Class<?> detailType, int columnOffset,
+	public ManyToManyFieldMetadata(Field field, 
+									Class<?> detailType,
+									boolean readOnly,
+									int columnOffset,
 									String tableName, String myColumn, String othColumn) {
-		super(field, detailType, columnOffset);
+		
+		super(field, detailType, readOnly, columnOffset);
 		this.tableName = tableName;
 		this.myColumnName = myColumn;
 		this.othColumnName = othColumn;

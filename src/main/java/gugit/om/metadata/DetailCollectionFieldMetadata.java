@@ -6,12 +6,15 @@ public class DetailCollectionFieldMetadata extends FieldMetadata{
 
 	private Class<?> detailType;
 	private int columnOffset;
+	private boolean readOnly;
 	
-	public DetailCollectionFieldMetadata(Field field, Class<?> detailType, int columnOffset) {
+	public DetailCollectionFieldMetadata(Field field, Class<?> detailType, boolean readOnly, int columnOffset) {
 		super(field);
 		super.setType(detailType);
+		
 		this.detailType = detailType;
 		this.columnOffset = columnOffset;
+		this.readOnly = readOnly;
 	}
 
 	public Class<?> getType(){
@@ -20,5 +23,9 @@ public class DetailCollectionFieldMetadata extends FieldMetadata{
 	
 	public int getColumnOffset(){
 		return columnOffset;
+	}
+
+	public boolean isReadOnly(){
+		return readOnly;
 	}
 }

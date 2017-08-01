@@ -85,12 +85,16 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 				; // just skipping transient fields
 			else
 			if (annotations.isColumn()){
-				entityMetadata.addPrimitiveField(new ColumnFieldMetadata(field, annotations.getColumnName(), columnOffset));
+				entityMetadata.addPrimitiveField(new ColumnFieldMetadata(field, 
+																			annotations.getColumnName(), 
+																			annotations.isReadOnly(),
+																			columnOffset));
 				columnOffset += 1;
 			}else
 			if (annotations.isMasterEntity()){
 				entityMetadata.addMasterRefField( new ColumnFieldMetadata(field, 
 																			annotations.getMasterMyColumnName(),
+																			annotations.isReadOnly(),
 																			columnOffset));
 				columnOffset += 1;
 				relatedTypes.add(field.getType());
@@ -98,6 +102,7 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 			if (annotations.isDetailEntity()){
 				ColumnFieldMetadata fieldMeta = new ColumnFieldMetadata(field,
 																		annotations.getDetailMyColumnName(),
+																		annotations.isReadOnly(),
 																		columnOffset);
 				entityMetadata.addPojoField( fieldMeta );
 				
@@ -111,7 +116,10 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 			else
 			if (annotations.isDetailEntities()){
 				Class<?> detailClass = annotations.getDetailEntitiesType();
-				entityMetadata.addPojoCollectionField( new DetailCollectionFieldMetadata(field, detailClass, columnOffset));
+				entityMetadata.addPojoCollectionField( new DetailCollectionFieldMetadata(field, 
+																						detailClass, 
+																						annotations.isReadOnly(),
+																						columnOffset));
 				
 				EntityMetadata<?> pojoMetadata = getMetadataFor(detailClass);
 				
@@ -131,6 +139,7 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 				entityMetadata.addPojoCollectionField( 
 											new ManyToManyFieldMetadata(field, 
 																		detailClass, 
+																		annotations.isReadOnly(),
 																		columnOffset,
 																		tableName,
 																		myColumn,
@@ -158,6 +167,7 @@ public class EntityMetadataRegistry implements IEntityMetadataFactory{
 	private <T> ColumnFieldMetadata createIDMetadata(Field idField, int position) {
 		return new ColumnFieldMetadata(idField, 
 										resolveIdColumnName(idField), 
+										false,
 										position);
 	}
 

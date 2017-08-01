@@ -18,4 +18,6 @@ public @interface ManyToMany {
 	
 	String otherColumn();
 	
+	boolean readOnly() default false;
+	
 }

@@ -3,14 +3,20 @@ package gugit.om.test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import gugit.om.mapping.NullWriteValue;
-import gugit.om.mapping.WriteBatch;
-import gugit.om.mapping.EntityWritePacket;
-import gugit.om.test.model.Address;
-import gugit.om.test.model.Person;
-import gugit.om.test.utils.TestUtils;
+
+import java.util.List;
 
 import org.junit.Test;
+
+import gugit.om.mapping.EntityWritePacket;
+import gugit.om.mapping.NullWriteValue;
+import gugit.om.mapping.WriteBatch;
+import gugit.om.mapping.WritePacketElement;
+import gugit.om.test.model.Address;
+import gugit.om.test.model.B;
+import gugit.om.test.model.EntityWithReadOnlyFields;
+import gugit.om.test.model.Person;
+import gugit.om.test.utils.TestUtils;
 
 public class MasterDetailWritingTest {
 	
@@ -113,6 +119,40 @@ public class MasterDetailWritingTest {
 		assertNotNull(batch.getNext());
 		
 		assertNotNull(batch.getNext());
+		
+		assertNull(batch.getNext());
+	}
+	
+	@Test
+	public void testReadOnlyFieldsWriting(){
+		EntityWithReadOnlyFields entity = new EntityWithReadOnlyFields();
+		
+			B b1 = new B();
+			entity.setB1(b1);
+			
+			B b2 = new B();
+			entity.setB2(b2);
+			
+			entity.setName("hi");
+			entity.setPcode("pcode");
+			
+		WriteBatch batch = TestUtils.createObjectMapper().writeEntity(entity);
+		
+		EntityWritePacket firstWrite = (EntityWritePacket)batch.getNext();
+		assertEquals(b1, firstWrite.getEntity());
+		
+		firstWrite.updateIDValue(10);
+		
+		EntityWritePacket secondWrite = (EntityWritePacket)batch.getNext();
+		assertEquals(entity, secondWrite.getEntity());
+		
+		List<WritePacketElement> elements = secondWrite.getElements();
+		assertEquals(elements.size(), 2);
+		
+		assertEquals(entity.getName(), secondWrite.getByColumnName("NAME").value);
+		assertEquals(b1.getId(), secondWrite.getByColumnName("B1_ID").value);
+		assertNull(secondWrite.getByColumnName("PCODE"));
+		assertNull(secondWrite.getByColumnName("B2_ID"));
 		
 		assertNull(batch.getNext());
 	}

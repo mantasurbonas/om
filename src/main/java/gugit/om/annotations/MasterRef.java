@@ -10,4 +10,6 @@ import java.lang.annotation.Target;
 @Retention(RUNTIME)
 public @interface MasterRef {	
 	String myColumn();
+	
+	boolean readOnly() default false;
 }

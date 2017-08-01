@@ -19,4 +19,6 @@ import java.lang.annotation.Target;
 public @interface Pojos {
 
 	Class<?> detailClass();
+	
+	boolean readOnly() default false;
 }

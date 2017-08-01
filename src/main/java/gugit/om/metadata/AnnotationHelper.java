@@ -55,6 +55,30 @@ public class AnnotationHelper {
 		Column colAnnotation = (Column)getByClass(Column.class);
 		return colAnnotation.name();
 	}
+	
+	public boolean isReadOnly(){
+		Column col = (Column) getByClass(Column.class);
+		if (col!=null)
+			return col.readOnly();
+		
+		Pojo poj = (Pojo) getByClass(Pojo.class);
+		if (poj!=null)
+			return poj.readOnly();
+		
+		Pojos pojs = (Pojos) getByClass(Pojos.class);
+		if (pojs!=null)
+			return pojs.readOnly();
+		
+		ManyToMany mm = (ManyToMany) getByClass(ManyToMany.class);
+		if (mm!=null)
+			return mm.readOnly();
+		
+		MasterRef master = (MasterRef) getByClass(MasterRef.class);
+		if (master!=null)
+			return master.readOnly();
+		
+		return false;
+	}
 
 	public String getDetailMyColumnName(){
 		Pojo annotation = (Pojo) getByClass(Pojo.class);
@@ -90,6 +114,7 @@ public class AnnotationHelper {
 		MasterRef annotation = (MasterRef) getByClass(MasterRef.class);
 		return annotation.myColumn();
 	}	
+	
 	
 	public boolean containsClass(Class<?> clazz) {
 		return getByClass(clazz) != null;

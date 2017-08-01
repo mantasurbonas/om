@@ -12,4 +12,5 @@ public @interface Column {
 	
 	String name();
 
+	boolean readOnly() default false;
 }
